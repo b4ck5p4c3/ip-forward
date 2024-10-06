@@ -1,0 +1,3 @@
+#!/bin/sh
+
+printf "%-5s %5s %s ± %5s %s %5s %s %-15s %s\n" $(pluginctl -r return_gateways_status | jq -rc '.dpinger[] | select(.loss != "~") | (.status, .delay, .stddev, .loss, .name, .monitor)')
