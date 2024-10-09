@@ -1,0 +1,5 @@
+unbound_enable="YES"
+unbound_profiles="dns2tun"
+unbound_dns2tun_enable="YES"
+unbound_dns2tun_config="/usr/local/etc/unbound/dns2tun.conf"
+

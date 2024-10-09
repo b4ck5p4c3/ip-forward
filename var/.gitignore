@@ -1,0 +1,3 @@
+# keep var/ "clean" for git-status
+*
+!.gitignore

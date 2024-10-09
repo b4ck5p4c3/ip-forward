@@ -1,0 +1,4 @@
+unbound.opnsense.forward-to-dns2tun.conf:/usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf
+unbound.rc.dns2tun.conf:/usr/local/etc/unbound/dns2tun.conf
+unbound.rc.local-tlds-ipset.conf:/usr/local/etc/unbound/local-tlds-ipset.conf
+unbound.rc:/etc/rc.conf.d/unbound

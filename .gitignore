@@ -1,0 +1,10 @@
+/local.conf.mk
+/share/antifilter-community.txt
+/share/fz139-resolves.zip
+/share/fz139-vigruzki.zip
+/share/iana-tlds.txt
+/share/public_suffix_list.dat
+/share/tor-auth-dirs.inc
+/share/tor-fallback-dirs.inc
+/share/tor-microdesc
+/share/v2fly-community.zip

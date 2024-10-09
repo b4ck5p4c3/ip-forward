@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# What a wonderful domains we have in dump.xml:
+# - "dokumentam24.ru,"
+# - "krak%e1%ba%b9n.com"
+# - "spravkasrochno.ru\\vse-spravki"
+# - "www.ispovednik.com."
+
+TLDS="${1:-tlds-alpha-by-domain.txt}"
+
+if [ ! -r "$TLDS" ]; then
+  echo "$0: TLDS=${TLDS} is unreadable" 1>&2
+  exit 1
+fi
+
+tldre=$(sed '/^#/d; y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' "${TLDS}" | tr '\n' '|')
+tldre="${tldre%%|}"
+
+# bashism is: tldre="${tldre//|/\\|}"
+tldre=$(echo "${tldre}" | sed 's,|,\\|,g')
+
+exec sed \
+  -e 's!,$!!; s!%e1%ba%b9!e!; s!\.ru\\.\+!\.ru!' \
+  -e '/[^-a-z0-9_.]/ { w /dev/stderr' -e 'd }' \
+  -e '/\(\.\|^\)\('"${tldre}"'\)$/ ! { w /dev/stderr' -e 'd }'

@@ -1,0 +1,18 @@
+#!/bin/sh
+
+url="$1"
+out="$2"
+base=$(basename "$out")
+if type curl >/dev/null 2>&1; then
+  set -ex
+  curl --silent --show-error --globoff --location --compressed --output "tmp/${base}" "${url}"
+elif type wget >/dev/null 2>&1; then
+  set -ex
+  wget -O "tmp/${base}" "${url}"
+elif type fetch >/dev/null 2>&1; then
+  set -ex
+  fetch -o "tmp/${base}" "${url}"
+else
+  exit 1
+fi
+mv "tmp/${base}" "${out}"
