@@ -196,14 +196,19 @@ var/unbound.rc.dns2tun.conf : share/unbound-dns2tun.conf local.conf.mk
 build : var/unbound.opnsense.forward-to-dns2tun.conf.gz
 build : var/unbound.rc.dns2tun.conf
 build : var/unbound.rc.local-tlds-ipset.conf.gz
+build : var/ipv4.gz
 
 ########################################################################
 # `install`
 
 # /usr/local/opnsense/service/templates/$(VENDOR)/$(APP)/ can't handle large
 # configuration file and OOMs. So, here is the hack.
-install : /var/run/unbound-dns2tun.pid
+install : \
+		/usr/local/etc/rc.syshook.d/early/50-ip2tun \
+		/var/db/aliastables/ip2tun.gz \
+		/var/run/unbound-dns2tun.pid
 	make -j1 /var/run/unbound.pid
+	/usr/local/etc/rc.syshook.d/early/50-ip2tun
 
 /usr/local/etc/unbound/dns2tun.conf : var/unbound.rc.dns2tun.conf
 	cp var/unbound.rc.dns2tun.conf $@
@@ -228,8 +233,15 @@ install : /var/run/unbound-dns2tun.pid
 /var/run/unbound.pid : /usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf
 	pluginctl -s unbound restart
 
+/usr/local/etc/rc.syshook.d/early/50-ip2tun : share/ip2tun
+	cp share/ip2tun $@
+	chmod 755 $@
+/var/db/aliastables/ip2tun.gz : var/ipv4.gz
+	cp var/ipv4.gz $@
+
 deinstall :
 	rm -f /usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf
 	pluginctl -s unbound restart
 	service unbound stop
 	rm -f /usr/local/etc/unbound/dns2tun.conf /usr/local/etc/unbound/local-tlds-ipset.conf /etc/rc.conf.d/unbound
+	rm -f /var/db/aliastables/ip2tun.gz /usr/local/etc/rc.syshook.d/early/50-ip2tun

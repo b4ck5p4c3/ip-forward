@@ -1,0 +1,5 @@
+#!/bin/sh
+
+if [ -r /var/db/aliastables/ip2tun.gz ]; then
+    zcat /var/db/aliastables/ip2tun.gz | pfctl -t ip2tun -T replace -f-
+fi
