@@ -13,13 +13,12 @@ if [ ! -r "$TLDS" ]; then
   exit 1
 fi
 
-tldre=$(sed '/^#/d; y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' "${TLDS}" | tr '\n' '|')
+tldre=$(sed -E '/^#/d; y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' "${TLDS}" | tr '\n' '|')
 tldre="${tldre%%|}"
 
-# bashism is: tldre="${tldre//|/\\|}"
-tldre=$(echo "${tldre}" | sed 's,|,\\|,g')
-
-exec sed \
+exec sed -E \
   -e 's!,$!!; s!%e1%ba%b9!e!; s!\.ru\\.\+!\.ru!' \
-  -e '/[^-a-z0-9_.]/ { w /dev/stderr' -e 'd }' \
-  -e '/\(\.\|^\)\('"${tldre}"'\)$/ ! { w /dev/stderr' -e 'd }'
+  -e '/[^-a-z0-9_.]/ w /dev/stderr' \
+  -e '/[^-a-z0-9_.]/ d' \
+  -e '/(\.|^)('"${tldre}"')$/ ! w /dev/stderr' \
+  -e '/(\.|^)('"${tldre}"')$/ ! d'
