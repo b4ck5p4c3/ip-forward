@@ -1,0 +1,8 @@
+#!/bin/sh -ex
+set -o pipefail
+PSL="${1:-public_suffix_list.dat}"
+if [ ! -r "$PSL" ]; then
+  echo "$0: PSL=${PSL} is unreadable" 1>&2
+  exit 1
+fi
+psl --load-psl-file "${PSL}" --print-reg-domain | awk -F': ' '{ print $2 == "(null)" ? $1 : $2; }'

@@ -42,7 +42,6 @@ WEB_SOURCES := \
     share/v2fly-community.zip
 
 SORT_U := LC_ALL=C sort --unique
-PSL_REG_DOMAIN := psl --load-psl-file share/public_suffix_list.dat --print-reg-domain | awk -F': ' '{ print $$2 == "(null)" ? $$1 : $$2; }'
 AGGREGATE_IPV4 := sed '/\// ! s,$$,/32,' | aggregate | sed 's,/32$$,,'
 
 .PHONY : all fetch build install clean distclean
@@ -102,7 +101,7 @@ tmp/dns.fz139.gz : tmp/dump.json.gz share/iana-tlds.txt tmp/rvzdata.nxdomain sha
 		| jq -r '.domain[], .mask[]' \
 		| lib/sed-domain share/iana-tlds.txt \
 		| grep --invert-match --fixed-strings --line-regexp -f tmp/rvzdata.nxdomain \
-		| $(PSL_REG_DOMAIN) \
+		| lib/psl-reg-domain share/public_suffix_list.dat \
 		| $(SORT_U) \
 		| gzip >$@
 tmp/ipv4.fz139.gz : tmp/dump.json.gz
