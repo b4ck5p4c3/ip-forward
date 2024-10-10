@@ -120,7 +120,7 @@ tmp/ipv6.fz139.gz : tmp/dump.json.gz
 # v2fly, Project V derivatives
 
 tmp/v2fly.includes :
-	echo $(V2FLY_SERVICES) | sed 's,\(^\| \),&\ninclude:,g' | sed '/^$$/d; s/^\s*//; s/\s*$$//' >$@
+	echo $(V2FLY_SERVICES) | sed 's,\(^\| \),&\ninclude:,g' | sed '/^$$/d; s/^[[:space:]]*//; s/[[:space:]]*$$//' >$@
 tmp/dns.v2fly.gz : share/v2fly-community.zip tmp/v2fly.includes share/iana-tlds.txt
 	unzip -p share/v2fly-community.zip `echo $(V2FLY_SERVICES) | sed 's,\(^\| \),&domain-list-community-master/data/,g'` \
 		| grep --invert-match --fixed-strings --line-regexp -f tmp/v2fly.includes \
