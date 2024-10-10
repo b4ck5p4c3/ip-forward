@@ -143,9 +143,9 @@ tmp/antifilter-extra.txt : share/antifilter-community.txt tmp/fz139-v2fly.regex
 		rm -f $${fre}; \
 		mv tmp/antifilter-extra.txt.next tmp/antifilter-extra.txt; \
 	done
-tmp/dns.antifilter.gz : tmp/antifilter-extra.txt
+tmp/dns.antifilter.gz : tmp/antifilter-extra.txt share/public_suffix_list.dat
 	grep --invert-match -e '\.google\.com$$' tmp/antifilter-extra.txt \
-		| $(PSL_REG_DOMAIN) \
+		| lib/psl-reg-domain share/public_suffix_list.dat \
 		| $(SORT_U) >tmp/dns.antifilter
 	grep -e '\.google\.com$$' tmp/antifilter-extra.txt >>tmp/dns.antifilter
 	gzip tmp/dns.antifilter
