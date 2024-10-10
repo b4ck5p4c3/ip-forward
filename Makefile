@@ -176,7 +176,7 @@ var/ipv4.gz : tmp/ipv4.fz139.gz tmp/ipv4.tor.gz
 
 # It might be wrong for several reasons. Here is one of them: CNAMEs are chased by Unbound itself,
 # asking the remote server for every name in the indirection chain.
-var/unbound.opnsense.forward-to-dns2tun.conf.gz : var/dns.gz
+var/unbound.opnsense.forward-to-dns2tun.conf.gz : var/dns.gz local.conf.mk
 	zcat var/dns.gz \
 		| sed 's/.*/forward-zone:\n name: "&."\n forward-addr: 127.0.0.1@$(DNS2TUN_PORT)\n forward-no-cache: yes/' \
 		| gzip >"$@"
