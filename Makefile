@@ -188,7 +188,7 @@ var/unbound.rc.local-tlds-ipset.conf.gz : share/iana-tlds.txt
 
 var/unbound.rc.dns2tun.conf : share/unbound-dns2tun.conf local.conf.mk
 	sed \
-		-e 's,@@DNS2TUN_IPv4@@,$(DNS2TUN_IPV4),' \
+		-e 's,@@DNS2TUN_IPV4@@,$(DNS2TUN_IPV4),' \
 		-e 's,@@DNS2TUN_PORT@@,$(DNS2TUN_PORT),' \
 		-e 's,@@DNS2TUN_OUT_IF@@,$(DNS2TUN_OUT_IF),' \
 		-e 's,@@DNS2TUN_FWD_TO@@,$(DNS2TUN_FWD_TO),' \
