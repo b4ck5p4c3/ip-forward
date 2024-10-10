@@ -2,6 +2,7 @@
 # "WireGuard DNS server", so it's not templated with Jinja2.
 DNS2TUN_OUT_IF := 0.0.0.0
 DNS2TUN_FWD_TO := 0.0.0.0
+DNS2TUN_IPV4 := 127.4.51.53
 DNS2TUN_PORT := 53451
 
 # See https://docs.opnsense.org/development/backend/templates.html
@@ -178,7 +179,7 @@ var/ipv4.gz : tmp/ipv4.fz139.gz tmp/ipv4.tor.gz
 # asking the remote server for every name in the indirection chain.
 var/unbound.opnsense.forward-to-dns2tun.conf.gz : var/dns.gz local.conf.mk
 	zcat var/dns.gz \
-		| sed 's/.*/forward-zone:\n name: "&."\n forward-addr: 127.0.0.1@$(DNS2TUN_PORT)\n forward-no-cache: yes/' \
+		| sed 's/.*/forward-zone:\n name: "&."\n forward-addr: $(DNS2TUN_IPV4)@$(DNS2TUN_PORT)\n forward-no-cache: yes/' \
 		| gzip >"$@"
 
 var/unbound.rc.local-tlds-ipset.conf.gz : share/iana-tlds.txt
@@ -187,6 +188,7 @@ var/unbound.rc.local-tlds-ipset.conf.gz : share/iana-tlds.txt
 
 var/unbound.rc.dns2tun.conf : share/unbound-dns2tun.conf local.conf.mk
 	sed \
+		-e 's,@@DNS2TUN_IPv4@@,$(DNS2TUN_IPv4),' \
 		-e 's,@@DNS2TUN_PORT@@,$(DNS2TUN_PORT),' \
 		-e 's,@@DNS2TUN_OUT_IF@@,$(DNS2TUN_OUT_IF),' \
 		-e 's,@@DNS2TUN_FWD_TO@@,$(DNS2TUN_FWD_TO),' \
