@@ -78,7 +78,7 @@ share/tor-auth-dirs.inc :
 share/tor-fallback-dirs.inc :
 	lib/dl https://gitlab.torproject.org/tpo/core/tor/-/raw/main/src/app/config/fallback_dirs.inc?inline=false $@
 share/tor-microdesc : share/tor-auth-dirs.inc
-	for endpoint in `sed '/^\s\+"[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+:[0-9]\+\s/ ! d; s,^\s\+",,; s,\s.*,,; s,:80,,' share/tor-auth-dirs.inc`; do \
+	for endpoint in `sed -E '/^[[:space:]]+"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+[[:space:]]/ ! d; s,^[[:space:]]*",,; s,[[:space:]].*,,; s,:80,,' share/tor-auth-dirs.inc`; do \
 		lib/dl http://$${endpoint}/tor/status-vote/current/consensus-microdesc $@ && break; \
 	done
 
@@ -120,11 +120,11 @@ tmp/ipv6.fz139.gz : tmp/dump.json.gz
 # v2fly, Project V derivatives
 
 tmp/v2fly.includes :
-	echo $(V2FLY_SERVICES) | sed 's,\(^\| \),&\ninclude:,g' | sed '/^$$/d; s/^[[:space:]]*//; s/[[:space:]]*$$//' >$@
+	echo $(V2FLY_SERVICES) | sed -E 's,[[:space:]]+,\n,g' | sed -E '/^$$/d; s/^/include:/' >$@
 tmp/dns.v2fly.gz : share/v2fly-community.zip tmp/v2fly.includes share/iana-tlds.txt
 	unzip -p share/v2fly-community.zip `echo $(V2FLY_SERVICES) | sed 's,\(^\| \),&domain-list-community-master/data/,g'` \
 		| grep --invert-match --fixed-strings --line-regexp -f tmp/v2fly.includes \
-		| sed 's,^full:,,; s,\s*[@#].*$$,,; /^\s*$$/d' \
+		| sed -E 's,^full:,,; s,[[:space:]]*[@#].*$$,,; /^[[:space:]]*$$/d' \
 		| lib/sed-domain share/iana-tlds.txt \
 		| gzip >$@
 
@@ -133,7 +133,7 @@ tmp/dns.v2fly.gz : share/v2fly-community.zip tmp/v2fly.includes share/iana-tlds.
 
 tmp/fz139-v2fly.regex : tmp/dns.v2fly.gz tmp/dns.fz139.gz
 	zcat tmp/dns.v2fly.gz tmp/dns.fz139.gz \
-		| sed 's,\.,\\.,g; s,^,\\(^\\|\\.\\),; s,$$,$$,' \
+		| sed -E 's,\.,\\.,g; s,^,\\(^\\|\\.\\),; s,$$,$$,' \
 		| $(SORT_U) >$@
 tmp/antifilter-extra.txt : share/antifilter-community.txt tmp/fz139-v2fly.regex
 	rm -f tmp/fz139-v2fly.regex.*
@@ -155,8 +155,8 @@ tmp/dns.antifilter.gz : tmp/antifilter-extra.txt
 # Tor, The Onion Router network
 
 tmp/ipv4.tor.gz : share/tor-auth-dirs.inc share/tor-fallback-dirs.inc share/tor-microdesc
-	sed '/^\s\+"[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+:[0-9]\+\s/ ! d; s,^\s\+",,; s,:.*,,' share/tor-auth-dirs.inc >tmp/ipv4.tor
-	sed '/^\s\+"[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+\s/ ! d; s,^\s\+",,; s,\s.*,,' share/tor-fallback-dirs.inc >>tmp/ipv4.tor
+	sed -E '/^[[:space:]]+"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+[[:space:]]/ ! d; s,^[[:space:]]*",,; s,:.*,,' share/tor-auth-dirs.inc >tmp/ipv4.tor
+	sed -E '/^[[:space:]]+"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[[:space:]]/ ! d; s,^[[:space:]]*",,; s,[[:space:]].*,,' share/tor-fallback-dirs.inc >>tmp/ipv4.tor
 	awk '($$1 == "r") { print $$6 }' share/tor-microdesc >>tmp/ipv4.tor
 	gzip tmp/ipv4.tor
 
