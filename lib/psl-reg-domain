@@ -1,5 +1,5 @@
 #!/bin/sh -ex
-set -o pipefail # dash>=0.5.12-7, Ubuntu 24.04+, https://stackoverflow.com/a/78499522/71923
+#set -o pipefail # dash>=0.5.12-7, Ubuntu 24.04+, https://stackoverflow.com/a/78499522/71923
 PSL="${1:-public_suffix_list.dat}"
 if [ ! -r "$PSL" ]; then
   echo "$0: PSL=${PSL} is unreadable" 1>&2
