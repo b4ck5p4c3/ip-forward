@@ -23,6 +23,6 @@ fi
 for u in `curl -sS -H "${SWYNCA_HEADER}" https://re-swynca.app.0x08.in/api/members/github | jq -r .[]`; do
   curl -sS "https://github.com/${u}.keys" \
     | sed -E \
-      -e 's,^,expiry-time="'"${expiry}"' ",' \
+      -e 's,^,expiry-time="'"${expiry}"'" ,' \
       -e 's,$, gh:'"$u"','
 done
