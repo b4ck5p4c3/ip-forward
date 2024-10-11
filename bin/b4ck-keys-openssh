@@ -1,0 +1,28 @@
+#!/bin/sh -ex
+
+if [ -r "$HOME/.swynca" ]; then
+  . $HOME/.swynca
+fi
+if [ -z "${SWYNCA_HEADER}" ]; then
+  echo "$0: empty SWYNCA_HEADER" 1>&2
+  exit 1
+fi
+
+now=`date +%s`
+in45d=$(( $now + 45 * 86400 ))
+uname=`uname`
+if [ "$uname" = FreeBSD ]; then
+  expiry=`date -r "$in45d" +%Y%m%d`
+elif [ "$uname" = Linux ]; then
+  expiry=`date -d "@${in45d}" +%Y%m%d`
+else
+  echo "$0: can't calc expiry-time" 1>&2
+  exit 1
+fi
+
+for u in `curl -sS -H "${SWYNCA_HEADER}" https://re-swynca.app.0x08.in/api/members/github | jq -r .[]`; do
+  curl -sS "https://github.com/${u}.keys" \
+    | sed -E \
+      -e 's,^,expiry-time="'"${expiry}"' ",' \
+      -e 's,$, gh:'"$u"','
+done
