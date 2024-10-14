@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+#
+# Yes, FreeBSD `grep --invert-match --fixed-strings --line-regexp -f 100k.lines.txt` is also kinda slow.
+
+import sys
+with open(sys.argv[1]) as fd:
+    skip = set(fd.readlines())
+for line in sys.stdin:
+    if line not in skip:
+        sys.stdout.write(line)

@@ -101,7 +101,7 @@ tmp/dns.fz139.gz : tmp/dump.json.gz share/iana-tlds.txt tmp/rvzdata.nxdomain sha
 	zcat tmp/dump.json.gz \
 		| jq -r '.domain[], .mask[]' \
 		| lib/sed-domain share/iana-tlds.txt \
-		| grep --invert-match --fixed-strings --line-regexp -f tmp/rvzdata.nxdomain \
+		| lib/grep-vFxf tmp/rvzdata.nxdomain \
 		| lib/psl-reg-domain share/public_suffix_list.dat \
 		| $(SORT_U) \
 		| gzip >$@
