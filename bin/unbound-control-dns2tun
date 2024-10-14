@@ -1,0 +1,2 @@
+#!/bin/sh
+exec unbound-control -c /usr/local/etc/unbound/dns2tun.conf "$@"
