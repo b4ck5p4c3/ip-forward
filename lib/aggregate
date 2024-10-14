@@ -1,0 +1,2 @@
+#!/bin/sh
+sed '/\// ! s,$,/32,' | aggregate | sed 's,/32$,,'

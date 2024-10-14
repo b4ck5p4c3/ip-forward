@@ -43,7 +43,6 @@ WEB_SOURCES := \
     share/v2fly-community.zip
 
 SORT_U := LC_ALL=C sort --unique
-AGGREGATE_IPV4 := sed '/\// ! s,$$,/32,' | aggregate | sed 's,/32$$,,'
 
 .PHONY : all fetch build install clean distclean
 .PRECIOUS : $(WEB_SOURCES)
@@ -171,7 +170,7 @@ var/dns.gz : tmp/dns.fz139.gz tmp/dns.v2fly.gz tmp/dns.antifilter.gz share/iana-
 
 var/ipv4.gz : tmp/ipv4.fz139.gz tmp/ipv4.tor.gz
 	zcat tmp/ipv4.fz139.gz tmp/ipv4.tor.gz \
-		| $(AGGREGATE_IPV4) \
+		| lib/aggregate \
 		| $(SORT_U) --version-sort \
 		| gzip >$@
 
