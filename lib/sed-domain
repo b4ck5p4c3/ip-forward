@@ -1,28 +1,23 @@
-#!/bin/sh
+#!/usr/bin/env python3
+
+import re
+import sys
+
+tldsfn = 'tlds-alpha-by-domain.txt' if len(sys.argv) == 1 else sys.argv[1]
+with open(tldsfn) as fd:
+    tlds = [_.strip().lower() for _ in fd if not _.startswith('#')]
+
+# It would be nice to do it with simple `sed`, but FreeBSD-14.1 sed
+# can't handle that long regexp without 100% CPU usage.
+domre = re.compile(r'^(?:[-a-z0-9_.]+\.)?(?:{})$'.format('|'.join(tlds)))
 
 # What a wonderful domains we have in dump.xml:
 # - "dokumentam24.ru,"
 # - "krak%e1%ba%b9n.com"
 # - "spravkasrochno.ru\\vse-spravki"
 # - "www.ispovednik.com."
-
-TLDS="${1:-tlds-alpha-by-domain.txt}"
-
-if [ ! -r "$TLDS" ]; then
-  echo "$0: TLDS=${TLDS} is unreadable" 1>&2
-  exit 1
-fi
-
-uname=`uname`
-if [ "$uname" = FreeBSD ]; then
-  echo "$0: FreeBSD sed can't handle that long regexp, sorry" 1>&2
-  exit 1
-fi
-
-tldre=$(sed -E '/^#/d; y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' "${TLDS}" | tr '\n' '|')
-tldre="${tldre%%|}"
-
-exec sed -E \
-  -e 's!,$!!; s!%e1%ba%b9!e!; s!\.ru\\.\+!\.ru!' \
-  -e '/[^-a-z0-9_.]/ { w /dev/stderr' -e 'd }' \
-  -e '/(\.|^)('"${tldre}"')$/ ! { w /dev/stderr' -e 'd }'
+for line in sys.stdin:
+    if domre.match(line.strip()):
+        sys.stdout.write(line)
+    else:
+        sys.stderr.write(line)
