@@ -121,7 +121,7 @@ tmp/ipv6.fz139.gz : tmp/dump.json.gz
 tmp/v2fly.includes :
 	echo $(V2FLY_SERVICES) | sed -E 's,[[:space:]]+,\n,g' | sed -E '/^$$/d; s/^/include:/' >$@
 tmp/dns.v2fly.gz : share/v2fly-community.zip tmp/v2fly.includes share/iana-tlds.txt
-	unzip -p share/v2fly-community.zip `echo $(V2FLY_SERVICES) | sed 's,\(^\| \),&domain-list-community-master/data/,g'` \
+	unzip -p share/v2fly-community.zip `echo $(V2FLY_SERVICES) | sed -E 's,(^|[[:space:]]),&domain-list-community-master/data/,g'` \
 		| grep --invert-match --fixed-strings --line-regexp -f tmp/v2fly.includes \
 		| sed -E 's,^full:,,; s,[[:space:]]*[@#].*$$,,; /^[[:space:]]*$$/d' \
 		| lib/sed-domain share/iana-tlds.txt \
@@ -177,9 +177,10 @@ var/ipv4.gz : tmp/ipv4.fz139.gz tmp/ipv4.tor.gz
 # It might be wrong for several reasons. Here is one of them: CNAMEs are chased by Unbound itself,
 # asking the remote server for every name in the indirection chain.
 var/unbound.opnsense.forward-to-dns2tun.conf.gz : var/dns.gz local.conf.mk
-	zcat var/dns.gz \
-		| sed 's/.*/forward-zone:\n name: "&."\n forward-addr: $(DNS2TUN_IPV4)@$(DNS2TUN_PORT)\n forward-no-cache: yes/' \
-		| gzip >"$@"
+	echo server: >var/unbound.opnsense.forward-to-dns2tun.conf
+	zcat var/dns.gz | sed 's/.*/ local-zone: "&." ipset/' >>var/unbound.opnsense.forward-to-dns2tun.conf
+	zcat var/dns.gz | sed 's/.*/forward-zone:\n name: "&."\n forward-addr: $(DNS2TUN_IPV4)@$(DNS2TUN_PORT)\n forward-no-cache: yes/' >>var/unbound.opnsense.forward-to-dns2tun.conf
+	gzip var/unbound.opnsense.forward-to-dns2tun.conf
 
 var/unbound.rc.local-tlds-ipset.conf.gz : share/iana-tlds.txt
 	sed 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/; /^#/d; s/.*/local-zone: "&." ipset/' share/iana-tlds.txt \
