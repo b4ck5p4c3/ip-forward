@@ -229,11 +229,15 @@ install : \
 		/usr/local/etc/unbound/local-tlds-ipset.conf
 	service unbound restart
 
+/usr/local/etc/unbound.opnsense.d/enable-dns2tun.conf : share/unbound.opnsense.enable-dns2tun.conf
+	cp share/unbound.opnsense.enable-dns2tun.conf $@
 /usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf : var/unbound.opnsense.forward-to-dns2tun.conf.gz
 	cp var/unbound.opnsense.forward-to-dns2tun.conf.gz $@.gz
 	rm -f $@
 	gunzip $@.gz
-/var/run/unbound.pid : /usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf
+/var/run/unbound.pid : \
+		/usr/local/etc/unbound.opnsense.d/enable-dns2tun.conf \
+		/usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf
 	pluginctl -s unbound restart
 
 /usr/local/etc/rc.syshook.d/early/50-ip2tun : share/ip2tun
