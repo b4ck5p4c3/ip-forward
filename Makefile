@@ -93,7 +93,7 @@ tmp/blocked-domains-resolves/rvzdata.json : share/fz139-resolves.zip
 tmp/dump.json.gz : share/fz139-vigruzki.zip
 	unzip -p share/fz139-vigruzki.zip 'vigruzki-main/dump.xml.[0-9]*' \
 		| lib/vigruzki2js >tmp/dump.json
-	gzip tmp/dump.json
+	gzip -f tmp/dump.json
 tmp/rvzdata.nxdomain : share/fz139-resolves.zip
 	unzip -p share/fz139-resolves.zip blocked-domains-resolves-main/rvzdata.json | jq -r '.list[] | select(.rc == "NXDOMAIN") | .d' | $(SORT_U) >$@
 tmp/dns.fz139.gz : tmp/dump.json.gz share/iana-tlds.txt tmp/rvzdata.nxdomain share/public_suffix_list.dat
@@ -148,7 +148,7 @@ tmp/dns.antifilter.gz : tmp/antifilter-extra.txt share/public_suffix_list.dat
 		| lib/psl-reg-domain share/public_suffix_list.dat \
 		| $(SORT_U) >tmp/dns.antifilter
 	grep -e '\.google\.com$$' tmp/antifilter-extra.txt >>tmp/dns.antifilter
-	gzip tmp/dns.antifilter
+	gzip -f tmp/dns.antifilter
 
 ########################################################################
 # Tor, The Onion Router network
@@ -157,7 +157,7 @@ tmp/ipv4.tor.gz : share/tor-auth-dirs.inc share/tor-fallback-dirs.inc share/tor-
 	sed -E '/^[[:space:]]+"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+[[:space:]]/ ! d; s,^[[:space:]]*",,; s,:.*,,' share/tor-auth-dirs.inc >tmp/ipv4.tor
 	sed -E '/^[[:space:]]+"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[[:space:]]/ ! d; s,^[[:space:]]*",,; s,[[:space:]].*,,' share/tor-fallback-dirs.inc >>tmp/ipv4.tor
 	awk '($$1 == "r") { print $$6 }' share/tor-microdesc >>tmp/ipv4.tor
-	gzip tmp/ipv4.tor
+	gzip -f tmp/ipv4.tor
 
 ########################################################################
 # `build`
@@ -180,7 +180,7 @@ var/unbound.opnsense.forward-to-dns2tun.conf.gz : var/dns.gz local.conf.mk
 	echo server: >var/unbound.opnsense.forward-to-dns2tun.conf
 	zcat var/dns.gz | sed 's/.*/ local-zone: "&." ipset/' >>var/unbound.opnsense.forward-to-dns2tun.conf
 	zcat var/dns.gz | sed 's/.*/forward-zone:\n name: "&."\n forward-addr: $(DNS2TUN_IPV4)@$(DNS2TUN_PORT)\n forward-no-cache: yes/' >>var/unbound.opnsense.forward-to-dns2tun.conf
-	gzip var/unbound.opnsense.forward-to-dns2tun.conf
+	gzip -f var/unbound.opnsense.forward-to-dns2tun.conf
 
 var/unbound.rc.local-tlds-ipset.conf.gz : share/iana-tlds.txt
 	sed 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/; /^#/d; s/.*/local-zone: "&." ipset/' share/iana-tlds.txt \
@@ -215,6 +215,7 @@ install : \
 	cp var/unbound.rc.dns2tun.conf $@
 /usr/local/etc/unbound/local-tlds-ipset.conf : var/unbound.rc.local-tlds-ipset.conf.gz
 	cp var/unbound.rc.local-tlds-ipset.conf.gz $@.gz
+	rm -f $@
 	gunzip $@.gz
 /etc/rc.conf.d/unbound : share/unbound.rc
 	cp share/unbound.rc $@
@@ -230,6 +231,7 @@ install : \
 
 /usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf : var/unbound.opnsense.forward-to-dns2tun.conf.gz
 	cp var/unbound.opnsense.forward-to-dns2tun.conf.gz $@.gz
+	rm -f $@
 	gunzip $@.gz
 /var/run/unbound.pid : /usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf
 	pluginctl -s unbound restart
