@@ -44,18 +44,30 @@ WEB_SOURCES := \
 
 SORT_U := LC_ALL=C sort --unique
 
-.PHONY : all fetch build install clean distclean
+.PHONY : all fetch build install clean distclean depends
 .PRECIOUS : $(WEB_SOURCES)
 
 all : build
 fetch : $(WEB_SOURCES)
-build : fetch
+build : fetch depends
 install : build
 
+depends : \
+	/usr/local/bin/jq \
+	/usr/local/bin/nping \
+	/bin/sh
 clean :
 	git clean -dfx tmp var
 distclean :
 	git clean -dfx -e local.conf.mk .
+
+########################################################################
+# Packages
+
+/usr/local/bin/jq :
+	pkg install jq
+/usr/local/bin/nping :
+	pkg install nmap
 
 ########################################################################
 # Sources
