@@ -228,13 +228,13 @@ install : \
 	make -j1 /var/run/unbound.pid
 	/usr/local/etc/rc.syshook.d/early/50-ip2tun
 
-/etc/cron.d/ip-forward-kludges :
+/etc/cron.d/ip-forward-kludges : share/cron /usr/local/sbin/wg-kludge /usr/local/sbin/dpinger-kludge
 	cp share/cron $@
-/usr/local/sbin/wg-junk :
+/usr/local/sbin/wg-junk : bin/wg-junk
 	cp bin/wg-junk $@
-/usr/local/sbin/wg-kludge : /usr/local/sbin/wg-junk
+/usr/local/sbin/wg-kludge : bin/wg-kludge /usr/local/sbin/wg-junk
 	cp bin/wg-kludge $@
-/usr/local/sbin/dpinger-kludge :
+/usr/local/sbin/dpinger-kludge : bin/dpinger-kludge
 	cp bin/dpinger-kludge $@
 /root/bin/gw-status : /root/bin/.placeholder
 	ln -s $$PWD/bin/gw-status $@
