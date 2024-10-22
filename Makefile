@@ -217,11 +217,18 @@ build : var/ipv4.gz
 # /usr/local/opnsense/service/templates/$(VENDOR)/$(APP)/ can't handle large
 # configuration file and OOMs. So, here is the hack.
 install : \
+		/root/bin/gw-status \
 		/usr/local/etc/rc.syshook.d/early/50-ip2tun \
 		/var/db/aliastables/ip2tun.gz \
 		/var/run/unbound-dns2tun.pid
 	make -j1 /var/run/unbound.pid
 	/usr/local/etc/rc.syshook.d/early/50-ip2tun
+
+/root/bin/gw-status : /root/bin/.placeholder
+	ln -s $$PWD/bin/gw-status $@
+/root/bin/.placeholder :
+	test -d /root/bin || mkdir /root/bin
+	touch /root/bin/.placeholder
 
 /usr/local/etc/unbound/dns2tun.conf : var/unbound.rc.dns2tun.conf
 	cp var/unbound.rc.dns2tun.conf $@
