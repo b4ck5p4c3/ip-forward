@@ -218,12 +218,24 @@ build : var/ipv4.gz
 # configuration file and OOMs. So, here is the hack.
 install : \
 		/root/bin/gw-status \
+		/etc/cron.d/ip-forward-kludges \
+		/usr/local/sbin/dpinger-kludge \
+		/usr/local/sbin/wg-junk \
+		/usr/local/sbin/wg-kludge \
 		/usr/local/etc/rc.syshook.d/early/50-ip2tun \
 		/var/db/aliastables/ip2tun.gz \
 		/var/run/unbound-dns2tun.pid
 	make -j1 /var/run/unbound.pid
 	/usr/local/etc/rc.syshook.d/early/50-ip2tun
 
+/etc/cron.d/ip-forward-kludges :
+	cp share/cron $@
+/usr/local/sbin/wg-junk :
+	cp bin/wg-junk $@
+/usr/local/sbin/wg-kludge : /usr/local/sbin/wg-junk
+	cp bin/wg-kludge $@
+/usr/local/sbin/dpinger-kludge :
+	cp bin/dpinger-kludge $@
 /root/bin/gw-status : /root/bin/.placeholder
 	ln -s $$PWD/bin/gw-status $@
 /root/bin/.placeholder :

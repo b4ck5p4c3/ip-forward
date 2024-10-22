@@ -1,0 +1,12 @@
+#!/bin/sh
+#
+# Because OPNsense fails to launch dpinger on WireGuard interfaces sometimes.
+#
+# See /var/log/system/latest.log for the following lines:
+#   /usr/local/etc/rc.bootup: The required ... interface address could not be found, skipping.
+#
+
+if pluginctl -s dpinger status | grep -qF 'is not running'; then
+    pluginctl -s dpinger status | logger -t dpinger-kludge
+    pluginctl -s dpinger restart
+fi

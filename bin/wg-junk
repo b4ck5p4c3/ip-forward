@@ -38,4 +38,5 @@ for endpoint in $(wg show "${1}" endpoints | cut -f 2); do
 done
 wait
 
+echo "+ wg set ${1} listen-port $randport" 1>&2
 wg set "${1}" listen-port "$randport"

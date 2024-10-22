@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# Because VolksWG (AWG-2.0) is yet to be done.
+#
+
+pluginctl -r return_gateways_status | jq -r '.dpinger[] | select(.status == "down") | .monitor' | while read ip; do
+  if [ "$ip" != "${ip#*[0-9].[0-9]}" ]; then
+    iface=`route -4 get "$ip" | awk '($1 == "interface:") {print $2}'`
+  elif [ "$ip" != "${ip#*:[0-9a-fA-F]}" ]; then
+    iface=`route -6 get "$ip" | awk '($1 == "interface:") {print $2}'`
+  else
+    echo "Unrecognized IP format '$ip'" 1>&2
+    iface=
+  fi
+  if [ -n "$iface" -a "$iface" != "${iface#wg}" ]; then
+    wg-junk "$iface" 1>&2 | tee /dev/stderr | logger -t wg-kludge
+  fi
+done
