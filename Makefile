@@ -65,9 +65,9 @@ distclean :
 # Packages
 
 /usr/local/bin/jq :
-	pkg install jq
+	pkg install -y jq
 /usr/local/bin/nping :
-	pkg install nmap
+	pkg install -y nmap
 
 ########################################################################
 # Sources
