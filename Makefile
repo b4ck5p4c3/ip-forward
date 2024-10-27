@@ -44,13 +44,19 @@ WEB_SOURCES := \
 
 SORT_U := LC_ALL=C sort --unique
 
-.PHONY : all fetch build install clean distclean depends
+.PHONY : all \
+	depends fetch build \
+	install \
+	install-mgmt \
+	install-2tun \
+	clean distclean \
+	deinstall
 .PRECIOUS : $(WEB_SOURCES)
 
 all : build
 fetch : $(WEB_SOURCES)
 build : fetch depends
-install : build
+install : build install-mgmt install-2tun
 
 depends : \
 	/usr/local/bin/jq \
@@ -212,35 +218,37 @@ build : var/unbound.rc.local-tlds-ipset.conf.gz
 build : var/ipv4.gz
 
 ########################################################################
-# `install`
+# `install-mgmt`
+
+install-mgmt : \
+	/etc/cron.d/ip-forward-kludges \
+	/usr/local/libexec/dpinger-kludge \
+	/usr/local/libexec/wg-kludge \
+	/usr/local/sbin/gw-status \
+	/usr/local/sbin/wg-junk
+
+/etc/cron.d/ip-forward-kludges : share/cron /usr/local/libexec/wg-kludge /usr/local/libexec/dpinger-kludge
+	cp share/cron $@
+/usr/local/sbin/wg-junk : bin/wg-junk
+	cp bin/wg-junk $@
+/usr/local/libexec/wg-kludge : bin/wg-kludge /usr/local/sbin/wg-junk
+	cp bin/wg-kludge $@
+/usr/local/libexec/dpinger-kludge : bin/dpinger-kludge
+	cp bin/dpinger-kludge $@
+/usr/local/sbin/gw-status : bin/gw-status
+	cp bin/gw-status $@
+
+########################################################################
+# `install-2tun`
 
 # /usr/local/opnsense/service/templates/$(VENDOR)/$(APP)/ can't handle large
 # configuration file and OOMs. So, here is the hack.
-install : \
-		/root/bin/gw-status \
-		/etc/cron.d/ip-forward-kludges \
-		/usr/local/sbin/dpinger-kludge \
-		/usr/local/sbin/wg-junk \
-		/usr/local/sbin/wg-kludge \
+install-2tun : 	build \
 		/usr/local/etc/rc.syshook.d/early/50-ip2tun \
 		/var/db/aliastables/ip2tun.gz \
 		/var/run/unbound-dns2tun.pid
 	make -j1 /var/run/unbound.pid
 	/usr/local/etc/rc.syshook.d/early/50-ip2tun
-
-/etc/cron.d/ip-forward-kludges : share/cron /usr/local/sbin/wg-kludge /usr/local/sbin/dpinger-kludge
-	cp share/cron $@
-/usr/local/sbin/wg-junk : bin/wg-junk
-	cp bin/wg-junk $@
-/usr/local/sbin/wg-kludge : bin/wg-kludge /usr/local/sbin/wg-junk
-	cp bin/wg-kludge $@
-/usr/local/sbin/dpinger-kludge : bin/dpinger-kludge
-	cp bin/dpinger-kludge $@
-/root/bin/gw-status : /root/bin/.placeholder
-	ln -s $$PWD/bin/gw-status $@
-/root/bin/.placeholder :
-	test -d /root/bin || mkdir /root/bin
-	touch /root/bin/.placeholder
 
 /usr/local/etc/unbound/dns2tun.conf : var/unbound.rc.dns2tun.conf
 	cp var/unbound.rc.dns2tun.conf $@
@@ -276,6 +284,9 @@ install : \
 	chmod 755 $@
 /var/db/aliastables/ip2tun.gz : var/ipv4.gz
 	cp var/ipv4.gz $@
+
+########################################################################
+# `deinstall`
 
 deinstall :
 	rm -f /usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf
