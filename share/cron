@@ -1,3 +1,3 @@
 # Ad-hoc OPNsense kludges -- https://github.com/b4ck5p4c3/ip-forward
-1-59/4	*	*	*	*	root	flock --exclusive --nonblock /var/run/dpinger-kludge.lock /usr/local/sbin/dpinger-kludge
-3-59/4	*	*	*	*	root	flock --exclusive --nonblock /var/run/wg-kludge.lock /usr/local/sbin/wg-kludge
+1-59/4	*	*	*	*	root	flock --exclusive --nonblock /var/run/dpinger-kludge.lock /usr/local/libexec/dpinger-kludge
+3-59/4	*	*	*	*	root	flock --exclusive --nonblock /var/run/wg-kludge.lock /usr/local/libexec/wg-kludge
