@@ -225,6 +225,7 @@ install-mgmt : \
 	/usr/local/libexec/dpinger-kludge \
 	/usr/local/libexec/wg-kludge \
 	/usr/local/sbin/gw-status \
+	/usr/local/sbin/opnsense-api \
 	/usr/local/sbin/wg-junk
 
 /etc/cron.d/ip-forward-kludges : share/cron /usr/local/libexec/wg-kludge /usr/local/libexec/dpinger-kludge
@@ -237,6 +238,8 @@ install-mgmt : \
 	cp bin/dpinger-kludge $@
 /usr/local/sbin/gw-status : bin/gw-status
 	cp bin/gw-status $@
+/usr/local/sbin/opnsense-api : bin/opnsense-api
+	cp bin/opnsense-api $@
 
 ########################################################################
 # `install-2tun`

@@ -1,0 +1,36 @@
+#!/bin/sh
+
+if [ -r "$HOME/.opnsense" ]; then
+  . $HOME/.opnsense
+fi
+if [ -z "$OPNS_KEY" -o -z "$OPNS_SECRET" ]; then
+  echo "$0: empty OPNS_KEY and/or OPNS_SECRET" 1>&2
+  exit 1
+fi
+export OPNS_KEY OPNS_SECRET
+
+if [ -z "$OPNS_CA_BUNDLE" -a -r /usr/local/etc/lighttpd_webgui/cert.pem ]; then
+  OPNS_CA_BUNDLE=/usr/local/etc/lighttpd_webgui/cert.pem
+fi
+if [ -z "$CURL_CA_BUNDLE" -a -n "$OPNS_CA_BUNDLE" ]; then
+  CURL_CA_BUNDLE="$OPNS_CA_BUNDLE"
+  export CURL_CA_BUNDLE
+fi
+
+h=`hostname`
+
+if [ "$#" -eq 1 ]; then
+  set -- "https://${h}/api/${1}"
+elif [ "$#" -eq 2 ]; then
+  if [ "$2" = - ]; then
+    set -- --data-binary @-
+  else
+    set -- --data-raw "${2}"
+  fi
+  set -- "$@" -X POST -H "Content-Type: application/json; charset=UTF-8" "https://${h}/api/${1}"
+else
+  echo "$0: Usage $0 <path> [POST-body]" 1>&2
+  exit 1
+fi
+
+exec curl -sS --basic --variable %OPNS_KEY --variable %OPNS_SECRET --expand-user '{{OPNS_KEY}}:{{OPNS_SECRET}}' "$@"
