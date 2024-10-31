@@ -22,12 +22,13 @@ h=`hostname`
 if [ "$#" -eq 1 ]; then
   set -- "https://${h}/api/${1}"
 elif [ "$#" -eq 2 ]; then
+  p="${1}"
   if [ "$2" = - ]; then
     set -- --data-binary @-
   else
     set -- --data-raw "${2}"
   fi
-  set -- "$@" -X POST -H "Content-Type: application/json; charset=UTF-8" "https://${h}/api/${1}"
+  set -- "$@" -X POST -H "Content-Type: application/json; charset=UTF-8" "https://${h}/api/${p}"
 else
   echo "$0: Usage $0 <path> [POST-body]" 1>&2
   exit 1
