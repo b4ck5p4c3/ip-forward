@@ -53,7 +53,7 @@ if [ "$hwifcnt" -eq 1 ]; then
   l2ifid=`echo "$r" | jq -r '.rows[] | select(.is_physical == true) | .identifier'`
 elif [ "$hwifcnt" -ge 2 ]; then
   # FIXME: the only box like that is `uxie` so interfaces `description` is hardcoded for now
-  l2ifid=`echo "$r" | jq '.rows[] | select(.description == "internal") | .identifier'`
+  l2ifid=`echo "$r" | jq -r '.rows[] | select(.description == "internal") | .identifier'`
 fi
 
 mgmt=`opnsense-api 'firewall/group/get' | jq -r '.group.ifgroupentry[].ifname | select(. == "MGMTifs")'`
