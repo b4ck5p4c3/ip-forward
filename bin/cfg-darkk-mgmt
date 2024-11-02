@@ -1,0 +1,175 @@
+#!/bin/sh -ex
+
+########################################################################
+# For https://$(hostname)/ and `opnsense-api` to work
+
+if openssl x509 -in /usr/local/etc/lighttpd_webgui/cert.pem -text | grep -qF OPNsense.localdomain; then
+  configctl webgui restart renew
+fi
+
+########################################################################
+# https://$(hostname)/ui/firewall/alias
+
+no_alias() {
+  local r
+  r=`opnsense-api firewall/alias/getAliasUUID/"${1}"`
+  r=`echo "$r" | jq -c .`
+  test "$r" = "[]"
+}
+
+apply=false
+
+if no_alias MGMT_tcp; then
+  opnsense-api firewall/alias/addItem/ '{"alias":{"name":"MGMT_tcp","enabled":"1","type":"port","content":"22\n80\n443","description":"see ip-forward.git"}}'
+  apply=true
+fi
+
+if no_alias dns2tun; then
+  opnsense-api firewall/alias/addItem/ '{"alias":{"name":"dns2tun","enabled":"1","type":"external","counters":"1","description":"see ip-forward.git"}}'
+  apply=true
+fi
+
+if no_alias ip2tun; then
+  opnsense-api firewall/alias/addItem/ '{"alias":{"name":"ip2tun","enabled":"1","type":"external","counters":"0","description":"see ip-forward.git"}}'
+  apply=true
+fi
+
+if $apply; then
+  r=`opnsense-api firewall/alias/reconfigure '{}'`
+  r=`echo "$r" | jq -c .status`
+  test "$r" = ok
+fi
+
+########################################################################
+# Anti-lockout rule for `MGMTifs`
+#
+# Otherwise default auto-lockout rule is moved to WireGuard interface as soon
+# as WireGuard interface is created and control is lost.
+
+r=`opnsense-api interfaces/overview/interfacesInfo`
+hwifcnt=`echo "$r" | jq -r '[.rows[] | select(.is_physical == true)] | length'`
+test "$hwifcnt" -ge 1
+if [ "$hwifcnt" -eq 1 ]; then
+  l2ifid=`echo "$r" | jq -r '.rows[] | select(.is_physical == true) | .identifier'`
+elif [ "$hwifcnt" -ge 2 ]; then
+  # FIXME: the only box like that is `uxie` so interfaces `description` is hardcoded for now
+  l2ifid=`echo "$r" | jq '.rows[] | select(.description == "internal") | .identifier'`
+fi
+
+mgmt=`opnsense-api 'firewall/group/get' | jq -r '.group.ifgroupentry[].ifname | select(. == "MGMTifs")'`
+if [ "$mgmt" != MGMTifs ]; then
+  q=`jq -cn --arg l2ifid "${l2ifid}" '{group:{ifname:"MGMTifs",members:$l2ifid,nogroup:"1",sequence:"5",descr:"Allow MGMT_tcp and EchoReq from connected networks, see ip-forward.git"}}'`
+  opnsense-api firewall/group/addItem/ "$q"
+  opnsense-api firewall/group/reconfigure '{}'
+fi
+
+wait4filter() {
+  local q=""
+  for chunk in "$@"; do
+    q="${q}/<${chunk}</ && "
+  done
+  q="${q}1 { rc=0 } END { exit(rc) }"
+  while sleep 3; do
+    if xmllint --format --xpath /opnsense/filter/rule /conf/config.xml | awk -v rc=1 "$q"; then
+      break
+    fi
+  done
+}
+
+# `Firewall: Automation: Filter` has no ICMP rules :-(
+wait4filter 'interface>MGMTifs' 'direction>in' 'type>pass' 'ipprotocol>inet46' 'protocol>tcp' 'network>MGMTifs' 'network>\(self\)' 'port>MGMT_tcp' 'disablereplyto>1'
+wait4filter 'interface>MGMTifs' 'direction>in' 'type>pass' 'ipprotocol>inet' 'protocol>icmp' 'network>MGMTifs' 'network>\(self\)' 'icmptype>echoreq' 'disablereplyto>1'
+wait4filter 'interface>MGMTifs' 'direction>in' 'type>pass' 'ipprotocol>inet6' 'protocol>ipv6-icmp' 'network>MGMTifs' 'network>\(self\)' 'icmp6-type>echoreq' 'disablereplyto>1'
+
+########################################################################
+# WireGuard connections to MGMT hubs
+
+apply=false
+
+hubs=`jq -c '[.mgmt.hubs[].if]' ~/.opnspoke.json`
+missing=`opnsense-api wireguard/client/listServers | jq -r --argjson hubs "${hubs}" '$hubs - [.rows[].name] | .[]'`
+if [ -n "$missing" ]; then
+  priv=`jq -r .mgmt.priv ~/.opnspoke.json`
+  for hub in $missing; do
+    ctx=`jq -c --arg hub "$hub" -r '.mgmt.hubs[] | select(.if == $hub)' ~/.opnspoke.json`
+    q=`jq -cn --argjson ctx "$ctx" --arg priv "$priv" '{server:{enabled:"1",name:$ctx.if,privkey:$priv,tunneladdress:$ctx.ifaddr}}'`
+    opnsense-api wireguard/server/addServer/ "$q"
+  done
+  opnsense-api wireguard/general/set '{"general":{"enabled":"1"}}'
+  apply=true
+fi
+
+slugs=`jq -c '[.mgmt.hubs[].slug]' ~/.opnspoke.json`
+missing=`opnsense-api wireguard/client/get | jq -r --argjson slugs "${slugs}" '$slugs - [.client.clients.client[].name] | .[]'`
+if [ -n "$missing" ]; then
+  i2u=`opnsense-api wireguard/client/listServers | jq -c '[.rows[] | {key: .name, value: .uuid}] | from_entries'`
+  for slug in $missing; do
+    ctx=`jq -c --arg slug "$slug" -r '.mgmt.hubs[] | select(.slug == $slug)' ~/.opnspoke.json`
+    q=`jq -cn --argjson ctx "${ctx}" --argjson i2u "${i2u}" '{client: {enabled:"1", name:$ctx.slug, pubkey:$ctx.pub, psk:$ctx.psk, tunneladdress: $ctx.ifnet, serveraddress: $ctx.ip4, serverport: $ctx.port, servers:$i2u[$ctx.if]}}'`
+    opnsense-api wireguard/client/addClient "${q}"
+  done
+  apply=true
+fi
+
+if $apply; then
+  opnsense-api wireguard/service/reconfigure '{}'
+fi
+
+########################################################################
+# WireGuard -> MGMTifs
+
+# Wait for interface assignment.
+while sleep 3; do
+  missing=`opnsense-api interfaces/overview/interfacesInfo | jq -r --argjson hubs "$hubs" '$hubs - [.rows[].description] | length'`
+  if [ "$missing" -eq 0 ]; then
+    break
+  fi
+done
+
+if [ "$hwifcnt" -eq 1 ]; then
+  extra='[]'
+elif [ "$hwifcnt" -ge 2 ]; then
+  extra='["MGMTHUB"]' # FIXME: the only box like that is `uxie` so `["MGMTHUB"]` is hardcoded for now.
+fi
+
+r=`opnsense-api interfaces/overview/interfacesInfo`
+members=`echo "$r" | jq -c --argjson hubs "${hubs}" --argjson extra "${extra}" --arg l2ifid "$l2ifid" '[.rows[] | select([.description] | inside($hubs + $extra)) | .identifier] + [$l2ifid] | unique'`
+uuid=`opnsense-api firewall/group/searchItem | jq -r '.rows[] | select (.ifname == "MGMTifs") | .uuid'`
+test -n "$uuid" -a -n "$members"
+q=`jq -cn --argjson members "${members}" '{group:{ifname:"MGMTifs",members:($members | join(",")),nogroup:"1",sequence:"5",descr:"Allow MGMT_tcp and EchoReq from connected networks, see ip-forward.git"}}'`
+opnsense-api firewall/group/setItem/"${uuid}" "$q"
+opnsense-api firewall/group/reconfigure '{}'
+
+########################################################################
+# System: Gateways: Configuration. Gateways monitoring.
+#
+# https://$(hostname)/ui/routing/configuration
+
+# Wait for interface being enabled & configured as gateways.
+while sleep 3; do
+  r=`opnsense-api interfaces/overview/interfacesInfo | jq -r --argjson hubs "$hubs" '.rows[] | select([.description] | inside($hubs)) | select(.config.gateway_interface != "1") | {descr,gateway_interface}'`
+  if [ -z "$r" ]; then
+    break
+  fi
+done
+
+missing=`opnsense-api routing/settings/get | jq -r --argjson hubs "${hubs}" '$hubs - [.gateways.gateway_item[].interface[] | select(.selected == 1) | .value] | .[]'`
+if [ -n "$missing" ]; then
+  i2s=`opnsense-api routing/settings/searchGateway | jq -c '[.rows[] | {key: .interface_descr, value: {uuid, name, interface}}] | from_entries'`
+  for hub in $missing; do
+    uuid=`jq -rn --arg hub "$hub" --argjson i2s "$i2s" '$i2s[$hub].uuid'`
+    ctx=`jq -c --arg hub "$hub" -r '.mgmt.hubs[] | select(.if == $hub)' ~/.opnspoke.json`
+    q=`jq -cn --arg hub "$hub" --argjson i2s "$i2s" --argjson ctx "$ctx" '{gateway_item:{disabled:"0", name:$i2s[$hub].name, descr:"see ip-forward.git", interface: $i2s[$hub].interface, ipprotocol: "inet6", gateway: $ctx.gw, defaultgw: "0", monitor_disable: "0", "priority": "252"}}'`
+    opnsense-api "routing/settings/setGateway/${uuid}" "$q"
+  done
+  opnsense-api routing/settings/reconfigure '{}'
+fi
+
+# TODO: IPv6 RA
+# TODO: IPv6 static
+# TODO: node_exporter
+# TODO: cpu-microcode
+# TODO: @vpngen
+# TODO: power
+# TODO: Services: Router Advertisements: [WANandOnly]
+# TODO: IPv6 ::/1 & 8000::/1
