@@ -36,7 +36,7 @@ fi
 
 if $apply; then
   r=`opnsense-api firewall/alias/reconfigure '{}'`
-  r=`echo "$r" | jq -c .status`
+  r=`echo "$r" | jq -cr .status`
   test "$r" = ok
 fi
 
