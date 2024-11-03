@@ -17,21 +17,28 @@ if [ -z "$CURL_CA_BUNDLE" -a -n "$OPNS_CA_BUNDLE" ]; then
   export CURL_CA_BUNDLE
 fi
 
-h=`hostname`
+host=`hostname`
+endp="$1"
 
 if [ "$#" -eq 1 ]; then
-  set -- "https://${h}/api/${1}"
+  set -- "https://${host}/api/${endp}"
 elif [ "$#" -eq 2 ]; then
-  p="${1}"
   if [ "$2" = - ]; then
     set -- --data-binary @-
   else
     set -- --data-raw "${2}"
   fi
-  set -- "$@" -X POST -H "Content-Type: application/json; charset=UTF-8" "https://${h}/api/${p}"
+  set -- "$@" -X POST -H "Content-Type: application/json; charset=UTF-8" "https://${host}/api/${endp}"
 else
   echo "$0: Usage $0 <path> [POST-body]" 1>&2
   exit 1
 fi
 
-exec curl -sS --basic --variable %OPNS_KEY --variable %OPNS_SECRET --expand-user '{{OPNS_KEY}}:{{OPNS_SECRET}}' "$@"
+set -- -sS --basic --variable %OPNS_KEY --variable %OPNS_SECRET --expand-user '{{OPNS_KEY}}:{{OPNS_SECRET}}' "$@"
+
+if [ ! -t 1 ]; then # pipe
+    exec curl "$@"
+else # interactive
+    echo "==> ${endp} <==" 1>&2
+    curl "$@" | jq .
+fi

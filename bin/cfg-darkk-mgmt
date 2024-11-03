@@ -1,13 +1,6 @@
 #!/bin/sh -ex
 
 ########################################################################
-# For https://$(hostname)/ and `opnsense-api` to work
-
-if openssl x509 -in /usr/local/etc/lighttpd_webgui/cert.pem -text | grep -qF OPNsense.localdomain; then
-  configctl webgui restart renew
-fi
-
-########################################################################
 # https://$(hostname)/ui/firewall/alias
 
 no_alias() {
