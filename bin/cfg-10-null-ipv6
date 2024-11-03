@@ -22,6 +22,6 @@
 r=`opnsense-api routes/routes/searchRoute`
 missing=`echo "$r" | jq -r '["::0/1","8000::/1"] -  [.rows[].network] | .[]'`
 for rt in $missing; do
-  q=`jq -nc --arg rt "$rt" '{"route":{"disabled":"0","network":$rt,"gateway":"Null6","descr":""}}'`
+  q=`jq -nc --arg rt "$rt" '{"route":{"disabled":"0","network":$rt,"gateway":"Null6","descr":"Override bogus ::/0, see ip-forward.git"}}'`
   opnsense-api routes/routes/addroute "$q"
 done
