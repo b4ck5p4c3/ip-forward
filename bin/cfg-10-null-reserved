@@ -5,6 +5,7 @@
 #
 
 r=`opnsense-api routes/routes/searchRoute`
+apply=false
 
 # https://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry.xhtml
 
@@ -12,6 +13,7 @@ missing=`echo "$r" | jq -r '["0.0.0.0/8","10.0.0.0/8","100.64.0.0/10","169.254.0
 for rt in $missing; do
   q=`jq -nc --arg rt "$rt" '{"route":{"disabled":"0","network":$rt,"gateway":"Null4","descr":"Special IP, see ip-forward.git"}}'`
   opnsense-api routes/routes/addroute "$q"
+  apply=true
 done
 
 # https://www.iana.org/assignments/iana-ipv6-special-registry/iana-ipv6-special-registry.xhtml
@@ -20,4 +22,9 @@ missing=`echo "$r" | jq -r '["::ffff:0:0/96","64:ff9b::/96","64:ff9b:1::/48","10
 for rt in $missing; do
   q=`jq -nc --arg rt "$rt" '{"route":{"disabled":"0","network":$rt,"gateway":"Null6","descr":"Special IP, see ip-forward.git"}}'`
   opnsense-api routes/routes/addroute "$q"
+  apply=true
 done
+
+if "$apply"; then
+  opnsense-api routes/routes/reconfigure '{}'
+fi

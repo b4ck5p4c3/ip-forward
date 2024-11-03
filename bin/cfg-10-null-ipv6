@@ -25,3 +25,7 @@ for rt in $missing; do
   q=`jq -nc --arg rt "$rt" '{"route":{"disabled":"0","network":$rt,"gateway":"Null6","descr":"Override bogus ::/0, see ip-forward.git"}}'`
   opnsense-api routes/routes/addroute "$q"
 done
+
+if [ -n "$missing" ]; then
+  opnsense-api routes/routes/reconfigure '{}'
+fi
