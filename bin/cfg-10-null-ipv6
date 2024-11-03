@@ -1,0 +1,27 @@
+#!/bin/sh -ex
+
+########################################################################
+# Workaround for bogus IPv6 default route
+#
+# The incorrect route to WireGuard interface is set as soon as WireGuard
+# has IPv6 ULA route O_o.
+#
+# ==> /var/log/wireguard/latest.log <==
+# [...] wireguard instance MGMTbrit (wg0) can not reconfigure without stopping it first.
+# [...] /usr/local/opnsense/scripts/Wireguard/wg-service-control.php: ROUTING: entering configure using opt1
+# [...] /usr/local/opnsense/scripts/Wireguard/wg-service-control.php: ROUTING: configuring inet6 default gateway on opt1
+# [...] /usr/local/opnsense/scripts/Wireguard/wg-service-control.php: ROUTING: setting inet6 default route to fd41:bb86:195d:2240::1
+# [...] /usr/local/opnsense/scripts/Wireguard/wg-service-control.php: plugins_configure monitor (,[MGMTBRIT_GW])
+# [...] /usr/local/opnsense/scripts/Wireguard/wg-service-control.php: plugins_configure monitor (execute task : dpinger_configure_do(,[MGMTBRIT_GW]))
+# [...] /usr/local/opnsense/scripts/Wireguard/wg-service-control.php: The required MGMTBRIT_GW IPv6 interface address could not be found, skipping.
+# [...] wireguard instance MGMTbrit (wg0) started
+#
+# So an overrie is required to avoid incorrect routing. FreeBSD has no concept
+# of route metric, so it's 2x/1 to override /0.
+
+r=`opnsense-api routes/routes/searchRoute`
+missing=`echo "$r" | jq -r '["::0/1","8000::/1"] -  [.rows[].network] | .[]'`
+for rt in $missing; do
+  q=`jq -nc --arg rt "$rt" '{"route":{"disabled":"0","network":$rt,"gateway":"Null6","descr":""}}'`
+  opnsense-api routes/routes/addroute "$q"
+done
