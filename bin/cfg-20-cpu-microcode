@@ -14,6 +14,6 @@ if [ -n "$plg" ]; then
   st=unknown
   while [ "$st" != done ]; do
     sleep 3
-    st=`opnsense-api core/firmware/upgradestatus | jq .status`
+    st=`opnsense-api core/firmware/upgradestatus | jq -r .status`
   done
 fi
