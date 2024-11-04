@@ -74,6 +74,12 @@ wait4filter 'interface>MGMTifs' 'direction>in' 'type>pass' 'ipprotocol>inet46' '
 wait4filter 'interface>MGMTifs' 'direction>in' 'type>pass' 'ipprotocol>inet' 'protocol>icmp' 'network>MGMTifs' 'network>\(self\)' 'icmptype>echoreq' 'disablereplyto>1'
 wait4filter 'interface>MGMTifs' 'direction>in' 'type>pass' 'ipprotocol>inet6' 'protocol>ipv6-icmp' 'network>MGMTifs' 'network>\(self\)' 'icmp6-type>echoreq' 'disablereplyto>1'
 
+# Firewall: Settings: Advanced at https://$(hostname)/system_advanced_firewall.php#noantilockout
+# Disable administration anti-lockout rule that is misbehaving.
+while ! xmllint --format --xpath /opnsense/system/webgui/noantilockout /conf/config.xml | grep -qF '<noantilockout>1</noantilockout>'; do
+  sleep 3
+done
+
 ########################################################################
 # WireGuard connections to MGMT hubs
 
