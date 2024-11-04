@@ -1,0 +1,19 @@
+#!/bin/sh -ex
+
+plg=""
+
+model=`sysctl -n hw.model`
+if [ -z "${model##AMD *}" ]; then
+  plg="os-cpu-microcode-amd"
+elif [ -z "${model##Intel(R) *}" ]; then
+  plg="os-cpu-microcode-intel"
+fi
+
+if [ -n "$plg" ]; then
+  opnsense-api core/firmware/install/"$plg" '{}'
+  st=unknown
+  while [ "$st" != done ]; do
+    sleep 3
+    st=`opnsense-api core/firmware/upgradestatus | jq .status`
+  done
+fi
