@@ -48,6 +48,7 @@ SORT_U := LC_ALL=C sort --unique
 	depends fetch build \
 	install \
 	install-mgmt \
+	install-unbound \
 	install-2tun \
 	clean distclean \
 	deinstall
@@ -242,11 +243,32 @@ install-mgmt : \
 	cp bin/opnsense-api $@
 
 ########################################################################
+# `install-unbound`
+
+install-unbound : \
+		/usr/local/etc/pkg/ip-forward.pub \
+		/usr/local/etc/pkg/repos/ip-forward.conf
+	pkg update
+	if ! pkg info unbound | grep -q 'IPSET\s*:\s*on\>'; then pkg upgrade -y --repository ip-forward unbound; fi
+	pkg lock -y unbound
+
+upgrade-unbound :
+	pkg unlock -y unbound
+	pkg upgrade -y --repository ip-forward unbound
+	pkg lock -y unbound
+
+/usr/local/etc/pkg/ip-forward.pub : share/pkg-ip-forward.pub
+	cp share/pkg-ip-forward.pub $@
+/usr/local/etc/pkg/repos/ip-forward.conf : share/repos-ip-forward.conf /usr/local/etc/pkg/ip-forward.pub
+	cp share/repos-ip-forward.conf $@
+
+########################################################################
 # `install-2tun`
 
 # /usr/local/opnsense/service/templates/$(VENDOR)/$(APP)/ can't handle large
 # configuration file and OOMs. So, here is the hack.
 install-2tun : 	build \
+		install-unbound \
 		/usr/local/etc/rc.syshook.d/early/50-ip2tun \
 		/var/db/aliastables/ip2tun.gz \
 		/var/run/unbound-dns2tun.pid
