@@ -49,6 +49,7 @@ SORT_U := LC_ALL=C sort --unique
 	install \
 	install-mgmt \
 	install-unbound \
+	upgrade-unbound \
 	install-2tun \
 	clean distclean \
 	deinstall
