@@ -51,6 +51,7 @@ SORT_U := LC_ALL=C sort --unique
 	install-unbound \
 	upgrade-unbound \
 	install-2tun \
+	up \
 	clean distclean \
 	deinstall
 .PRECIOUS : $(WEB_SOURCES)
@@ -64,6 +65,8 @@ depends : \
 	/usr/local/bin/jq \
 	/usr/local/bin/nping \
 	/bin/sh
+up :
+	git pull --ff-only
 clean :
 	git clean -dfx tmp var
 distclean :
