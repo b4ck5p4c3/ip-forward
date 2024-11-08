@@ -1,5 +1,11 @@
 #!/bin/sh -ex
 
+hwclock=`sysctl -n kern.timecounter.hardware`
+
+if [ "$hwclock" = kvmclock ]; then
+  exit 0
+fi
+
 plg=""
 
 model=`sysctl -n hw.model`
