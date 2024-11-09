@@ -230,6 +230,7 @@ install-mgmt : \
 	/usr/local/libexec/wg-kludge \
 	/usr/local/sbin/gw-status \
 	/usr/local/sbin/opnsense-api \
+	/usr/local/sbin/unbound-control-opnsense \
 	/usr/local/sbin/wg-junk
 
 /etc/cron.d/ip-forward-kludges : share/cron /usr/local/libexec/wg-kludge /usr/local/libexec/dpinger-kludge
@@ -244,6 +245,8 @@ install-mgmt : \
 	cp bin/gw-status $@
 /usr/local/sbin/opnsense-api : bin/opnsense-api
 	cp bin/opnsense-api $@
+/usr/local/sbin/unbound-control-opnsense : bin/unbound-control-opnsense
+	cp bin/unbound-control-opnsense $@
 
 ########################################################################
 # `install-unbound`
@@ -272,12 +275,15 @@ upgrade-unbound :
 # configuration file and OOMs. So, here is the hack.
 install-2tun : 	build \
 		install-unbound \
+		/usr/local/sbin/unbound-control-dns2tun \
 		/usr/local/etc/rc.syshook.d/early/50-ip2tun \
 		/var/db/aliastables/ip2tun.gz \
 		/var/run/unbound-dns2tun.pid
 	make -j1 /var/run/unbound.pid
 	/usr/local/etc/rc.syshook.d/early/50-ip2tun
 
+/usr/local/sbin/unbound-control-dns2tun : bin/unbound-control-dns2tun
+	cp bin/unbound-control-dns2tun $@
 /usr/local/etc/unbound/dns2tun.conf : var/unbound.rc.dns2tun.conf
 	cp var/unbound.rc.dns2tun.conf $@
 /usr/local/etc/unbound/local-tlds-ipset.conf : var/unbound.rc.local-tlds-ipset.conf.gz
