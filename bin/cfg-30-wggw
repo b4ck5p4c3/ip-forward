@@ -1,0 +1,96 @@
+#!/bin/sh -ex
+
+########################################################################
+# VPN: WireGuard
+
+jsls=`ls -d ~/.opn*.json`
+
+apply=false
+
+ifs=`jq -c '[.wggw[] | .if]' $jsls`
+missing=`opnsense-api wireguard/client/listServers | jq -r --argjson ifs "$ifs" '$ifs - [.rows[] | .name] | .[]'`
+for ifname in $missing; do
+  q=`jq -c --arg i "$ifname" '.wggw[] | select(.if == $i) | {server:{enabled:"1", disableroutes:"1", name: .if, privkey: .conf.interface.privatekey, tunneladdress: .conf.interface.address}}' $jsls`
+  opnsense-api wireguard/server/addServer "$q"
+  apply=true
+done
+
+peers=`jq -c '[.wggw[] | .if | . + "_Exit"]' $jsls`
+missing=`opnsense-api wireguard/client/get | jq -r --argjson p "$peers" '$p - [.client.clients.client[].name] | .[]'`
+if [ -n "$missing" ]; then
+  i2u=`opnsense-api wireguard/client/listServers | jq -c '[.rows[] | {key: .name, value: .uuid}] | from_entries'`
+  for peer in $missing; do
+    c=`jq -c --arg p "$peer" '.wggw[] | select((.if+"_Exit") == $p)' $jsls`
+    q=`jq -cn --argjson c "$c" --argjson i2u "$i2u" '{client: {enabled:"1", name:($c.if+"_Exit"), pubkey:$c.conf.peer.publickey, psk:$c.conf.peer.presharedkey, tunneladdress: $c.conf.peer.allowedips, serveraddress: ($c.conf.peer.endpoint | sub(":[[:space:]]*[[:digit:]]+$"; "")), serverport: ($c.conf.peer.endpoint | sub(".*:[[:space:]]*"; "")), servers:$i2u[$c.if]}}'`
+    opnsense-api wireguard/client/addClient "${q}"
+  done
+  apply=true
+fi
+
+if $apply; then
+  opnsense-api wireguard/service/reconfigure '{}'
+fi
+
+########################################################################
+# Interfaces: Assignments
+#
+# https://$(hostname)/interfaces_assign.php
+
+wait4iflist() {
+  local json_list="$1"
+  local missing
+  : https://`hostname`/interfaces_assign.php
+  while :; do
+    missing=`opnsense-api interfaces/overview/interfacesInfo | jq -r --argjson ifs "$json_list" '$ifs - [.rows[].description] | length'`
+    if [ "$missing" -eq 0 ]; then
+      break
+    fi
+    sleep 3
+  done
+}
+
+wait4iflist "$ifs"
+
+########################################################################
+# Interfaces: [...]
+
+wait4ifconf() {
+  local json_list="$1"
+  local conf="$2"
+  local missing
+  : https://`hostname`/interfaces.php
+  while :; do
+    missing=`opnsense-api interfaces/overview/interfacesInfo | jq -r --argjson ifs "$json_list" --argjson conf "$conf" '[.rows[] | select(([.description] | inside($ifs)) and (.config | contains($conf) | not))] | length'`
+    if [ "$missing" -eq 0 ]; then
+      break
+    fi
+    sleep 3
+  done
+}
+
+wait4ifconf "$ifs" '{"gateway_interface": "1", "enable": "1", "mss": "1420", "mtu": "1420"}'
+
+#########################################################################
+# System: Gateways: Configuration. Use DNS as monitored remote Gateway
+
+apply=false
+ns4=`jq -c '[.wggw[] | {if, dns4: [.conf.interface.dns | splits("[[:space:]]*,[[:space:]]*"; null) | select(. | contains(":") | not)] | first}]' $jsls`
+
+missing4=`opnsense-api routing/settings/get | jq -rc --argjson ifs "$ifs" '$ifs - [.gateways.gateway_item | with_entries(.value.uuid = .key) | map(.if = ([.interface[] | select(.selected == 1)] | first | .value)) | map(.interface = null) | map(.v = {IPv4:4,IPv6:6}[([.ipprotocol[] | select(.selected == 1)] | first | .value)]) | map(.ipprotocol = null) | .[] | select(.v == 4) | .if] | .[]'`
+if [ -n "$missing4" ]; then
+  i2s=`opnsense-api routing/settings/searchGateway | jq -c '[.rows[] | {key: .interface_descr, value: {uuid, name, interface}}] | from_entries'`
+  for ifname in $missing4; do
+    uuid=`jq -rn --arg i "$ifname" --argjson i2s "$i2s" '$i2s[$i].uuid'`
+    # NB: monitor_disable:"0" matters.
+    q=`jq -cn --arg i "$ifname" --argjson i2s "$i2s" --argjson ns4 "$ns4" \
+      '{gateway_item:{monitor_disable: "0", fargw: "1", name: ($i2s[$i].name + "4"), descr: "DNS4, see ip-forward.git", interface: $i2s[$i].interface, ipprotocol: "inet", gateway: ($ns4.[] | select(.if == $i) | .dns4), "priority": "164"}}'`
+    opnsense-api "routing/settings/setGateway/${uuid}" "$q"
+  done
+  apply=true
+fi
+
+if $apply; then
+  opnsense-api routing/settings/reconfigure '{}'
+fi
+
+# FIXME: IPv6 Gateway is needed for IPv6 routes to work.
