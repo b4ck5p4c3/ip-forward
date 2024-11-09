@@ -60,6 +60,7 @@ build : fetch depends
 install : build install-mgmt install-2tun
 
 depends : \
+	/usr/local/bin/aggregate \
 	/usr/local/bin/jq \
 	/usr/local/bin/nping \
 	/bin/sh
@@ -73,6 +74,8 @@ distclean :
 ########################################################################
 # Packages
 
+/usr/local/bin/aggregate :
+	pkg install -y aggregate
 /usr/local/bin/jq :
 	pkg install -y jq
 /usr/local/bin/nping :
