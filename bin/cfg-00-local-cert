@@ -1,5 +1,7 @@
 #!/bin/sh -ex
 
+make -C /root/ip-forward up depends install-mgmt
+
 ########################################################################
 # For https://$(hostname)/ and `opnsense-api` to work
 
