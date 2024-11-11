@@ -1,0 +1,15 @@
+#!/bin/sh -ex
+
+uname=$(uname)
+
+if [ "$uname" = Linux ]; then
+  sys_ncpu=`grep -c ^processor /proc/cpuinfo`
+elif [ "$uname" = FreeBSD ]; then
+  sys_ncpu=`sysctl -n hw.ncpu`
+else
+  sys_ncpu=1
+fi
+
+ncpu=${NCPU:-${sys_ncpu}}
+
+openssl speed -multi "$ncpu" -seconds 10 -evp ChaCha20-Poly1305 -bytes 1420 | tee /dev/stderr | awk '(NF == 2 && ($1 == "ChaCha20-Poly1305" || $1 == "evp")) { print "~", ($2 * 8 / 1024), "MBit/s"; }'
