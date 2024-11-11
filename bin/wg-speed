@@ -11,5 +11,6 @@ else
 fi
 
 ncpu=${NCPU:-${sys_ncpu}}
+seconds=${SECONDS:-10}
 
-openssl speed -multi "$ncpu" -seconds 10 -evp ChaCha20-Poly1305 -bytes 1420 | tee /dev/stderr | awk '(NF == 2 && ($1 == "ChaCha20-Poly1305" || $1 == "evp")) { print "~", ($2 * 8 / 1024), "MBit/s"; }'
+openssl speed -multi "$ncpu" -seconds "$seconds" -evp ChaCha20-Poly1305 -bytes 1420 | tee /dev/stderr | awk '(NF == 2 && ($1 == "ChaCha20-Poly1305" || $1 == "evp")) { print "~", ($2 * 8 / 1024), "MBit/s"; }'
