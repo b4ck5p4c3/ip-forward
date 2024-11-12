@@ -1,5 +1,7 @@
 #!/bin/sh -ex
 
+. b4ck.subr
+
 ########################################################################
 # VPN: WireGuard
 
@@ -27,6 +29,8 @@ if [ -n "$missing" ]; then
   apply=true
 fi
 
+# TODO: <enable wireguard if it's disabled>
+
 if $apply; then
   opnsense-api wireguard/service/reconfigure '{}'
 fi
@@ -36,37 +40,10 @@ fi
 #
 # https://$(hostname)/interfaces_assign.php
 
-wait4iflist() {
-  local json_list="$1"
-  local missing
-  : https://`hostname`/interfaces_assign.php
-  while :; do
-    missing=`opnsense-api interfaces/overview/interfacesInfo | jq -r --argjson ifs "$json_list" '$ifs - [.rows[].description] | length'`
-    if [ "$missing" -eq 0 ]; then
-      break
-    fi
-    sleep 3
-  done
-}
-
 wait4iflist "$ifs"
 
 ########################################################################
 # Interfaces: [...]
-
-wait4ifconf() {
-  local json_list="$1"
-  local conf="$2"
-  local missing
-  : https://`hostname`/interfaces.php
-  while :; do
-    missing=`opnsense-api interfaces/overview/interfacesInfo | jq -r --argjson ifs "$json_list" --argjson conf "$conf" '[.rows[] | select(([.description] | inside($ifs)) and (.config | contains($conf) | not))] | length'`
-    if [ "$missing" -eq 0 ]; then
-      break
-    fi
-    sleep 3
-  done
-}
 
 wait4ifconf "$ifs" '{"gateway_interface": "1", "enable": "1", "mss": "1420", "mtu": "1420"}'
 
@@ -94,3 +71,7 @@ if $apply; then
 fi
 
 # FIXME: IPv6 Gateway is needed for IPv6 routes to work.
+# TODO: NAT44 for ip-forward
+# TODO: NAT66 for ip-forward
+# TODO: NAT44 for unknown subnet for ip-forward
+# TODO: NAT66 for unknown subnet for ip-forward

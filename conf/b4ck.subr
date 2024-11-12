@@ -1,0 +1,44 @@
+#!/bin/sh
+
+no_alias() {
+  local r
+  r=`opnsense-api firewall/alias/getAliasUUID/"${1}"`
+  r=`echo "$r" | jq -c .`
+  test "$r" = "[]"
+}
+
+wait4iflist() {
+  local json_list="$1"
+  local missing
+  : https://`hostname`/interfaces_assign.php
+  while :; do
+    missing=`opnsense-api interfaces/overview/interfacesInfo | jq -r --argjson ifs "$json_list" '$ifs - [.rows[].description] | length'`
+    if [ "$missing" -eq 0 ]; then
+      break
+    fi
+    sleep 3
+  done
+}
+
+wait4ifconf() {
+  local json_list="$1"
+  local conf="$2"
+  local missing
+  : https://`hostname`/interfaces.php
+  while :; do
+    missing=`opnsense-api interfaces/overview/interfacesInfo | jq -r --argjson ifs "$json_list" --argjson conf "$conf" '[.rows[] | select(([.description] | inside($ifs)) and (.config | contains($conf) | not))] | length'`
+    if [ "$missing" -eq 0 ]; then
+      break
+    fi
+    sleep 3
+  done
+}
+
+wait4conf() {
+  local xpath="$1"
+  shift 1
+  until xmllint --format --xpath "$xpath" /conf/config.xml | grep -q "$@"; do
+    sleep 3
+  done
+}
+

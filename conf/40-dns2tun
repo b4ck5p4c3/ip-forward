@@ -1,14 +1,9 @@
 #!/bin/sh -ex
 
+. b4ck.subr
+
 ########################################################################
 # https://$(hostname)/ui/firewall/alias
-
-no_alias() {
-  local r
-  r=`opnsense-api firewall/alias/getAliasUUID/"${1}"`
-  r=`echo "$r" | jq -c .`
-  test "$r" = "[]"
-}
 
 apply=false
 
@@ -37,14 +32,6 @@ if [ -n "$missing" ]; then
   opnsense-api interfaces/vip_settings/addItem '{"vip":{"mode":"ipalias","interface":"lo0","network":"127.4.5.1/32","nobind":"0","descr":"see ip-forward.git"}}'
   opnsense-api interfaces/vip_settings/reconfigure '{}'
 fi
-
-wait4conf() {
-  local xpath="$1"
-  shift 1
-  until xmllint --format --xpath "$xpath" /conf/config.xml | grep -q "$@"; do
-    sleep 3
-  done
-}
 
 make -C /root/ip-forward install-unbound build install
 

@@ -1,33 +1,13 @@
 #!/bin/sh -ex
 
+. b4ck.subr
+
 ########################################################################
 # https://$(hostname)/ui/firewall/alias
 
-no_alias() {
-  local r
-  r=`opnsense-api firewall/alias/getAliasUUID/"${1}"`
-  r=`echo "$r" | jq -c .`
-  test "$r" = "[]"
-}
-
-apply=false
-
 if no_alias MGMT_tcp; then
   opnsense-api firewall/alias/addItem/ '{"alias":{"name":"MGMT_tcp","enabled":"1","type":"port","content":"22\n80\n443","description":"see ip-forward.git"}}'
-  apply=true
-fi
 
-if no_alias dns2tun; then
-  opnsense-api firewall/alias/addItem/ '{"alias":{"name":"dns2tun","enabled":"1","type":"external","counters":"1","description":"see ip-forward.git"}}'
-  apply=true
-fi
-
-if no_alias ip2tun; then
-  opnsense-api firewall/alias/addItem/ '{"alias":{"name":"ip2tun","enabled":"1","type":"external","counters":"0","description":"see ip-forward.git"}}'
-  apply=true
-fi
-
-if $apply; then
   r=`opnsense-api firewall/alias/reconfigure '{}'`
   r=`echo "$r" | jq -cr .status`
   test "$r" = ok
@@ -167,8 +147,5 @@ fi
 # TODO: IPv6 RA
 # TODO: IPv6 static
 # TODO: node_exporter
-# TODO: cpu-microcode
-# TODO: @vpngen
 # TODO: power
 # TODO: Services: Router Advertisements: [WANandOnly]
-# TODO: IPv6 ::/1 & 8000::/1
