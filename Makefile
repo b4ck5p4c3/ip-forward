@@ -74,7 +74,7 @@ distclean :
 ########################################################################
 # Packages
 
-/usr/local/bin/aggregate :
+/usr/local/bin/aggregate : /usr/local/etc/pkg/repos/ip-forward.conf
 	pkg install -y aggregate
 /usr/local/bin/jq :
 	pkg install -y jq
