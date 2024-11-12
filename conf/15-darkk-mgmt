@@ -83,12 +83,7 @@ fi
 # WireGuard -> MGMTifs
 
 # Wait for interface assignment.
-while sleep 3; do
-  missing=`opnsense-api interfaces/overview/interfacesInfo | jq -r --argjson hubs "$hubs" '$hubs - [.rows[].description] | length'`
-  if [ "$missing" -eq 0 ]; then
-    break
-  fi
-done
+wait4iflist "$hubs"
 
 if [ "$hwifcnt" -eq 1 ]; then
   extra='[]'
@@ -110,12 +105,7 @@ opnsense-api firewall/group/reconfigure '{}'
 # https://$(hostname)/ui/routing/configuration
 
 # Wait for interface being enabled & configured as gateways.
-while sleep 3; do
-  r=`opnsense-api interfaces/overview/interfacesInfo | jq -r --argjson hubs "$hubs" '.rows[] | select([.description] | inside($hubs)) | select(.config.gateway_interface != "1") | {descr,gateway_interface}'`
-  if [ -z "$r" ]; then
-    break
-  fi
-done
+wait4ifconf "$hubs" '{"gateway_interface": "1", "enable": "1"}'
 
 missing=`opnsense-api routing/settings/get | jq -r --argjson hubs "${hubs}" '$hubs - [.gateways.gateway_item[].interface[] | select(.selected == 1) | .value] | .[]'`
 if [ -n "$missing" ]; then
