@@ -44,7 +44,7 @@ wait4conf() {
 
 wireguard_enable() {
   local c=`opnsense-api wireguard/general/get`
-  c=`jq -nr --argjson c "$c" '$c.general.enabled'
+  c=`jq -nr --argjson c "$c" '$c.general.enabled'`
   if [ "$c" -ne 1 ]; then
     opnsense-api wireguard/general/set '{"general":{"enabled":"1"}}'
   fi
