@@ -42,6 +42,25 @@ wait4conf() {
   done
 }
 
+wait4confx() {
+  local xpath="$1"
+  shift 1
+
+  local q=""
+  for chunk in "$@"; do
+    q="${q}/<${chunk}</ && "
+  done
+  q="${q}1 { rc=0 } END { exit(rc) }"
+
+  until xmllint --format --xpath "$xpath" /conf/config.xml | awk -v rc=1 "$q"; do
+    sleep 3
+  done
+}
+
+wait4filter() {
+  wait4confx /opnsense/filter/rule "$@"
+}
+
 wireguard_enable() {
   local c=`opnsense-api wireguard/general/get`
   c=`jq -nr --argjson c "$c" '$c.general.enabled'`

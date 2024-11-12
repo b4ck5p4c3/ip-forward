@@ -36,29 +36,14 @@ if [ "$mgmt" != MGMTifs ]; then
   opnsense-api firewall/group/reconfigure '{}'
 fi
 
-wait4filter() {
-  local q=""
-  for chunk in "$@"; do
-    q="${q}/<${chunk}</ && "
-  done
-  q="${q}1 { rc=0 } END { exit(rc) }"
-  while sleep 3; do
-    if xmllint --format --xpath /opnsense/filter/rule /conf/config.xml | awk -v rc=1 "$q"; then
-      break
-    fi
-  done
-}
-
 # `Firewall: Automation: Filter` has no ICMP rules :-(
-wait4filter 'interface>MGMTifs' 'direction>in' 'type>pass' 'ipprotocol>inet46' 'protocol>tcp' 'network>MGMTifs' 'network>\(self\)' 'port>MGMT_tcp' 'disablereplyto>1'
-wait4filter 'interface>MGMTifs' 'direction>in' 'type>pass' 'ipprotocol>inet' 'protocol>icmp' 'network>MGMTifs' 'network>\(self\)' 'icmptype>echoreq' 'disablereplyto>1'
-wait4filter 'interface>MGMTifs' 'direction>in' 'type>pass' 'ipprotocol>inet6' 'protocol>ipv6-icmp' 'network>MGMTifs' 'network>\(self\)' 'icmp6-type>echoreq' 'disablereplyto>1'
+wait4filter 'type>pass' 'interface>MGMTifs' 'direction>in' 'ipprotocol>inet46' 'protocol>tcp'       'network>MGMTifs' 'network>\(self\)' 'port>MGMT_tcp'      'disablereplyto>1'
+wait4filter 'type>pass' 'interface>MGMTifs' 'direction>in' 'ipprotocol>inet'   'protocol>icmp'      'network>MGMTifs' 'network>\(self\)' 'icmptype>echoreq'   'disablereplyto>1'
+wait4filter 'type>pass' 'interface>MGMTifs' 'direction>in' 'ipprotocol>inet6'  'protocol>ipv6-icmp' 'network>MGMTifs' 'network>\(self\)' 'icmp6-type>echoreq' 'disablereplyto>1'
 
 # Firewall: Settings: Advanced at https://$(hostname)/system_advanced_firewall.php#noantilockout
 # Disable administration anti-lockout rule that is misbehaving.
-while ! xmllint --format --xpath /opnsense/system/webgui/noantilockout /conf/config.xml | grep -qF '<noantilockout>1</noantilockout>'; do
-  sleep 3
-done
+wait4conf /opnsense/system/webgui/noantilockout -F '<noantilockout>1</noantilockout>'
 
 ########################################################################
 # WireGuard connections to MGMT hubs
