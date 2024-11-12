@@ -74,7 +74,6 @@ if [ -n "$missing" ]; then
     q=`jq -cn --argjson ctx "$ctx" --arg priv "$priv" '{server:{enabled:"1",name:$ctx.if,privkey:$priv,tunneladdress:$ctx.ifaddr}}'`
     opnsense-api wireguard/server/addServer/ "$q"
   done
-  opnsense-api wireguard/general/set '{"general":{"enabled":"1"}}'
   apply=true
 fi
 
@@ -91,6 +90,7 @@ if [ -n "$missing" ]; then
 fi
 
 if $apply; then
+  wireguard_enable
   opnsense-api wireguard/service/reconfigure '{}'
 fi
 

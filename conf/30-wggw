@@ -29,9 +29,8 @@ if [ -n "$missing" ]; then
   apply=true
 fi
 
-# TODO: <enable wireguard if it's disabled>
-
 if $apply; then
+  wireguard_enable
   opnsense-api wireguard/service/reconfigure '{}'
 fi
 
