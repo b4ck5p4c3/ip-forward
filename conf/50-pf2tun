@@ -18,7 +18,7 @@ wait4confx /opnsense/gateways/gateway_group 'name>VPNgwgrp' 'trigger>down'
 
 jsls=`ls -d ~/.opn*.json`
 wgifs=`jq -r '.wggw[].if' $jsls`
-gwid=`jq -rn --argjson ifinfo "$ifinfo" '$ifinfo[.rows[] | select(.is_physical == true)] | first | .identifier'`
+gwid=`jq -rn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | select(.is_physical == true)] | first | .identifier'`
 if2id=`jq -cn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | {key: .description, value: .identifier}] | from_entries'`
 
 for ifname in $wgifs; do
