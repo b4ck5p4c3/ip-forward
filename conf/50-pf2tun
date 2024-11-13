@@ -18,11 +18,11 @@ wait4confx /opnsense/gateways/gateway_group 'name>VPNgwgrp' 'trigger>down'
 
 jsls=`ls -d ~/.opn*.json`
 wgifs=`jq -r '.wggw[].if' $jsls`
-gwid=`jq -r '[.rows[] | select(.is_physical == true)] | first | .identifier'`
-if2id=`opnsense-api interfaces/overview/interfacesInfo | jq -c '[.rows[] | {key: .description, value: .identifier}] | from_entries'`
+gwid=`jq -rn --argjson ifinfo "$ifinfo" '$ifinfo[.rows[] | select(.is_physical == true)] | first | .identifier'`
+if2id=`jq -cn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | {key: .description, value: .identifier}] | from_entries'`
 
 for ifname in $wgifs; do
-  id=`jq -nr --argjson id2id "$if2id" --arg ifname "$ifname" '$id2id[$ifname]'`
+  id=`jq -rn --argjson id2id "$if2id" --arg ifname "$ifname" '$id2id[$ifname]'`
   : nat-n-tag
   wait4natout "interface>${gwid}" 'ipprotocol>inet' 'source><network>\(self\)' 'destination><network>dns2tun' "target>${id}ip" 'staticnatport>1' "tag>via-${ifname}"
   wait4natout "interface>${gwid}" 'ipprotocol>inet' 'source><network>\(self\)' 'destination><network>ip2tun' "target>${id}ip" 'staticnatport>1' "tag>via-${ifname}"
