@@ -31,6 +31,7 @@ V2FLY_SERVICES := \
 
 WEB_SOURCES := \
     share/antifilter-community.txt \
+    share/cloudflare-ips-v4 \
     share/fz139-resolves.zip \
     share/fz139-vigruzki.zip \
     share/iana-tlds.txt \
@@ -104,6 +105,8 @@ share/tor-microdesc : share/tor-auth-dirs.inc
 	for endpoint in `sed -E '/^[[:space:]]+"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+[[:space:]]/ ! d; s,^[[:space:]]*",,; s,[[:space:]].*,,; s,:80,,' share/tor-auth-dirs.inc`; do \
 		lib/dl http://$${endpoint}/tor/status-vote/current/consensus-microdesc $@ && break; \
 	done
+share/cloudflare-ips-v4 :
+	lib/dl https://www.cloudflare.com/ips-v4 $@
 
 ########################################################################
 # IANA TLD list derivatives, see https://www.iana.org/domains/root/files
@@ -184,6 +187,13 @@ tmp/ipv4.tor.gz : share/tor-auth-dirs.inc share/tor-fallback-dirs.inc share/tor-
 	gzip -f tmp/ipv4.tor
 
 ########################################################################
+# Cloudflare. To ease ECH pain :-(
+
+tmp/ipv4.cloudflare.gz : share/cloudflare-ips-v4
+	cp share/cloudflare-ips-v4 tmp/ipv4.cloudflare
+	gzip tmp/ipv4.cloudflare
+
+########################################################################
 # `build`
 
 var/dns.gz : tmp/dns.fz139.gz tmp/dns.v2fly.gz tmp/dns.antifilter.gz share/iana-tlds.txt
@@ -192,8 +202,8 @@ var/dns.gz : tmp/dns.fz139.gz tmp/dns.v2fly.gz tmp/dns.antifilter.gz share/iana-
 		| $(SORT_U) \
 		| gzip >$@
 
-var/ipv4.gz : tmp/ipv4.fz139.gz tmp/ipv4.tor.gz
-	zcat tmp/ipv4.fz139.gz tmp/ipv4.tor.gz \
+var/ipv4.gz : tmp/ipv4.fz139.gz tmp/ipv4.tor.gz tmp/ipv4.cloudflare.gz
+	zcat tmp/ipv4.fz139.gz tmp/ipv4.tor.gz tmp/ipv4.cloudflare.gz \
 		| lib/aggregate \
 		| $(SORT_U) --version-sort \
 		| gzip >$@
