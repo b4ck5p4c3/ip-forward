@@ -3,7 +3,7 @@
 . b4ck.subr
 
 ifinfo=`opnsense-api interfaces/overview/interfacesInfo`
-hwifcnt=`jq -rn --argjson ifino "$ifinfo" '[$ifinfo.rows[] | select(.is_physical == true)] | length'`
+hwifcnt=`jq -rn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | select(.is_physical == true)] | length'`
 test "$hwifcnt" -eq 1 # This script is for Router-on-a-Stick for this moment.
 
 wait4confx /opnsense/gateways/gateway_group 'name>VPNgwgrp' 'trigger>down'
