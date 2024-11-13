@@ -55,7 +55,7 @@ fi
 
 # To ease debugging.
 cacheflush=`echo "$unconf" | jq -r '.unbound.general.cacheflush'`
-if [ "$cacheflush" -ne 1 ]; then
+if [ "$cacheflush" != 1 ]; then # it's string
   apply=`jq -nc --argjson a "$apply" '$a | .cacheflush = "1"'`
 fi
 
@@ -78,7 +78,7 @@ fi
 
 # If infra flaps, it should be probbed despite of TTL.
 infrakeepprobing=`jq -nr --argjson c "$unconf" '$c.unbound.advanced.infrakeepprobing'`
-if [ "$infrakeepprobing" -ne 1 ]; then
+if [ "$infrakeepprobing" != 1 ]; then # it's string
   apply=`jq -nc --argjson a "$apply" '$a | .infrakeepprobing = "1"'`
 fi
 
