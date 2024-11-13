@@ -1,0 +1,51 @@
+#!/bin/sh -ex
+
+. b4ck.subr
+
+ifinfo=`opnsense-api interfaces/overview/interfacesInfo`
+hwifcnt=`jq -rn --argjson ifino "$ifinfo" '[$ifinfo.rows[] | select(.is_physical == true)] | length'`
+test "$hwifcnt" -eq 1 # This script is for Router-on-a-Stick for this moment.
+
+wait4confx /opnsense/gateways/gateway_group 'name>VPNgwgrp' 'trigger>down'
+
+########################################################################
+# Firewall: NAT: Outbound. https://$(hostname)/firewall_nat_out.php
+
+# First, we take care of the router itself. `pf` has no good way to NAT packets
+# _after_ filter, and local packets do _NOT_ pass through any interface
+# in _in_ direction (as far as I see). So, policy routing decision is
+# essentially taking place in `nat` statement group for locally generated packets.
+
+jsls=`ls -d ~/.opn*.json`
+wgifs=`jq -r '.wggw[].if' $jsls`
+gwid=`jq -r '[.rows[] | select(.is_physical == true)] | first | .identifier'`
+if2id=`opnsense-api interfaces/overview/interfacesInfo | jq -c '[.rows[] | {key: .description, value: .identifier}] | from_entries'`
+
+for ifname in $wgifs; do
+  id=`jq -nr --argjson id2id "$if2id" --arg ifname "$ifname" '$id2id[$ifname]'`
+  : nat-n-tag
+  wait4natout "interface>${gwid}" 'ipprotocol>inet' 'source><network>\(self\)' 'destination><network>dns2tun' "target>${id}ip" 'staticnatport>1' "tag>via-${ifname}"
+  wait4natout "interface>${gwid}" 'ipprotocol>inet' 'source><network>\(self\)' 'destination><network>ip2tun' "target>${id}ip" 'staticnatport>1' "tag>via-${ifname}"
+done
+
+########################################################################
+# Firewall: Rules: WANandOnly
+#
+# https://$(hostname)/firewall_rules.php?if=wan
+
+gwinfo=`opnsense-api routing/settings/searchGateway`
+for ifname in $wgifs; do
+  gw=`jq -rn --argjson gwinfo "$gwinfo" --arg ifname "$ifname" '$gwinfo.rows[] | select(.interface_descr == $ifname and .ipprotocol == "inet" and .monitor_disable == "0") | .name'`
+  : tag-n-route
+  wait4filter "interface>${gwid}" 'direction>out' 'ipprotocol>inet' "gateway>${gw}" "tagged>via-${ifname}" 'statetype>keep state'
+done
+
+# Second, we take care of the forwarded traffic.
+wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet46' 'protocol>tcp/udp' 'source><network>wan' 'destination><network>\(self\)' 'port>53'
+wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet4' 'source><network>wan' 'destination><network>dns2tun' 'gateway>VPNgwgrp' 'statetype>sloppy state'
+wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet4' 'source><network>wan' 'destination><network>ip2tun' 'gateway>VPNgwgrp' 'statetype>sloppy state'
+wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet4' 'source><network>wan' 'not>1' 'network>\(self\)' 'statetype>sloppy state'
+
+# TODO: take care of DNS.
+# TODO: take care of faster do-something-on-loss.
+# TODO: take care of faster do-something-on-down.
