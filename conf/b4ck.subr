@@ -61,6 +61,10 @@ wait4filter() {
   wait4confx /opnsense/filter/rule "$@"
 }
 
+wait4natout() {
+  wait4confx /opnsense/nat/outbound/rule "$@"
+}
+
 wireguard_enable() {
   local c=`opnsense-api wireguard/general/get`
   c=`jq -nr --argjson c "$c" '$c.general.enabled'`
