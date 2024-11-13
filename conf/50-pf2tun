@@ -41,7 +41,7 @@ for ifname in $wgifs; do
 done
 
 # Second, we take care of the forwarded traffic.
-wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet46' 'protocol>tcp/udp' 'source><network>wan' 'destination><network>\(self\)' 'port>53'
+wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet46' 'protocol>tcp\/udp' 'source><network>wan' 'destination><network>\(self\)' 'port>53'
 wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet4' 'source><network>wan' 'destination><network>dns2tun' 'gateway>VPNgwgrp' 'statetype>sloppy state'
 wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet4' 'source><network>wan' 'destination><network>ip2tun' 'gateway>VPNgwgrp' 'statetype>sloppy state'
 wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet4' 'source><network>wan' 'not>1' 'network>\(self\)' 'statetype>sloppy state'
