@@ -24,8 +24,7 @@ V2FLY_SERVICES := \
     tailscale \
     twitter \
     x \
-    xai \
-    youtube
+    xai
 
 -include local.conf.mk
 
