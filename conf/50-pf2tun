@@ -45,7 +45,10 @@ done
 wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet46' 'protocol>tcp\/udp' 'source><network>wan' 'destination><network>\(self\)' 'port>53'
 wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet' 'source><network>wan' 'destination><address>dns2tun' 'gateway>VPNgwgrp' 'statetype>keep state'
 wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet' 'source><network>wan' 'destination><address>ip2tun' 'gateway>VPNgwgrp' 'statetype>keep state'
-wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet' 'source><network>wan' 'not>1' 'network>\(self\)' 'statetype>sloppy state'
+# The reason for sloppy-state being required both on `in` and `out` is not 100% clear to me, but it affects
+# session lifetime.  https://speedtest.net shows 0.1 Mbit/s upload without direction>out rule.
+wait4filter "interface>${gwid}" 'direction>in'  'ipprotocol>inet' 'source><network>wan' 'not>1' 'network>\(self\)' 'statetype>sloppy state'
+wait4filter "interface>${gwid}" 'direction>out' 'ipprotocol>inet' 'source><network>wan' 'not>1' 'network>\(self\)' 'statetype>sloppy state'
 
 # TODO: take care of DNS.
 # TODO: take care of faster do-something-on-loss.
