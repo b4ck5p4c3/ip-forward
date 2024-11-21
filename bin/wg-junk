@@ -34,7 +34,7 @@ for endpoint in $(wg show "${1}" endpoints | cut -f 2); do
   dsthost=$(echo "$endpoint" | sed 's/[\[\]]//g; s/:[0-9]*$//g')
   dstport=$(echo "$endpoint" | sed 's/[\[\]]//g; s/.*:\([0-9]*\)$/\1/g')
   # DPI takes 14 packets in _any_ direction
-  nping --rate 15 --count 15 --udp --source-port "$randport" --dest-port "$dstport" "$dsthost" --data-length $(( (1 + (`rng` % 31)) * 4 )) &
+  nping --hide-sent --rate 15 --count 15 --udp --source-port "$randport" --dest-port "$dstport" "$dsthost" --data-length $(( (1 + (`rng` % 31)) * 4 )) &
 done
 wait
 
