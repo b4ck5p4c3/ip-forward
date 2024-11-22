@@ -303,7 +303,9 @@ install-2tun : 	build \
 		/usr/local/etc/unbound/dns2tun.conf \
 		/usr/local/etc/unbound/dns2tun/unbound_server.pem \
 		/usr/local/etc/unbound/local-tlds-ipset.conf
+	# FIXME: unbound-checkconf: warning: forward-addr: '127.6.6.6' is specified for forward-zone: '.', but do-not-query-localhost: yes means that the address will not be used for lookups.
 	service unbound restart
+	/usr/local/etc/rc.syshook.d/monitor/25-dns2tun
 
 /usr/local/etc/unbound.opnsense.d/enable-dns2tun.conf : share/unbound.opnsense.enable-dns2tun.conf
 	cp share/unbound.opnsense.enable-dns2tun.conf $@
