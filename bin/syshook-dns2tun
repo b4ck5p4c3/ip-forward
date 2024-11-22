@@ -1,0 +1,33 @@
+#!/bin/sh -e
+#
+# Tune unbound dns2tun forwarder depending on alive gateways.
+# TODO: this code does not support several gateways within one Tier
+#
+# ARGV[]: CLOUD_GW4 192.0.2.42 'down -> delay' '488.6 ms' '1484.3 ms' '0.0 %'
+
+gwlist=`xmllint --xpath '/opnsense/gateways/gateway_group/name[text()="VPNgwgrp"]/../item/text()' /conf/config.xml | awk -F'|' '{print $2, $1}' | sort -n | awk '{print $2}'`
+gwstat=`pluginctl -r return_gateways_status`
+fwds=""
+
+for gw in $gwlist; do
+  status=`jq -nr --arg gw "$gw" --argjson s "$gwstat" '$s.dpinger[$gw].status'`
+  if [ "$status" = down ]; then
+    continue
+  fi
+
+  # That's the good gateway. Let's add this one and all the other non-down gateways of higher tiers.
+  ip=`jq -nr --arg gw "$gw" --argjson s "$gwstat" '$s.dpinger[$gw].monitor'`
+  fwds="${fwds} ${ip}"
+  if [ "$status" = none ]; then
+    break
+  fi
+done
+
+fwds="${fwds# }"
+if [ -n "$fwds" ]; then
+  {
+    set -x
+    unbound-control-dns2tun forward
+    unbound-control-dns2tun forward $fwds
+  } 2>&1 | logger -t dpinger-dns2tun
+fi

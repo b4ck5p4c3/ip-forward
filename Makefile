@@ -1,8 +1,3 @@
-# The IP addresses are hardcoded as OPNsense does not provide a clear way to specify
-# "WireGuard DNS server", so it's not templated with Jinja2.
-DNS2TUN_OUT_IF := 0.0.0.0
-DNS2TUN_FWD_TO := 0.0.0.0
-
 # See https://docs.opnsense.org/development/backend/templates.html
 VENDOR := b4cksp4ce
 APP := ip-forward
@@ -219,14 +214,7 @@ var/unbound.rc.local-tlds-ipset.conf.gz : share/iana-tlds.txt
 	sed 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/; /^#/d; s/.*/local-zone: "&." ipset/' share/iana-tlds.txt \
 		| gzip >"$@"
 
-var/unbound.rc.dns2tun.conf : share/unbound-dns2tun.conf local.conf.mk
-	sed \
-		-e 's,@@DNS2TUN_OUT_IF@@,$(DNS2TUN_OUT_IF),' \
-		-e 's,@@DNS2TUN_FWD_TO@@,$(DNS2TUN_FWD_TO),' \
-		<share/unbound-dns2tun.conf >$@
-
 build : var/unbound.opnsense.forward-to-dns2tun.conf.gz
-build : var/unbound.rc.dns2tun.conf
 build : var/unbound.rc.local-tlds-ipset.conf.gz
 build : var/ipv4.gz
 
@@ -288,16 +276,19 @@ upgrade-unbound :
 install-2tun : 	build \
 		install-unbound \
 		/usr/local/sbin/unbound-control-dns2tun \
+		/usr/local/etc/rc.syshook.d/monitor/25-dns2tun \
 		/usr/local/etc/rc.syshook.d/early/50-ip2tun \
 		/var/db/aliastables/ip2tun.gz \
 		/var/run/unbound-dns2tun.pid
 	make -j1 /var/run/unbound.pid
 	/usr/local/etc/rc.syshook.d/early/50-ip2tun
 
+/usr/local/etc/rc.syshook.d/monitor/25-dns2tun : bin/syshook-dns2tun /usr/local/sbin/unbound-control-dns2tun
+	cp bin/syshook-dns2tun $@
 /usr/local/sbin/unbound-control-dns2tun : bin/unbound-control-dns2tun
 	cp bin/unbound-control-dns2tun $@
-/usr/local/etc/unbound/dns2tun.conf : var/unbound.rc.dns2tun.conf
-	cp var/unbound.rc.dns2tun.conf $@
+/usr/local/etc/unbound/dns2tun.conf : share/unbound-dns2tun.conf
+	cp share/unbound-dns2tun.conf $@
 /usr/local/etc/unbound/local-tlds-ipset.conf : var/unbound.rc.local-tlds-ipset.conf.gz
 	cp var/unbound.rc.local-tlds-ipset.conf.gz $@.gz
 	rm -f $@
