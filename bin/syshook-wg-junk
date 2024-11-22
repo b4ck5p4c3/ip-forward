@@ -1,0 +1,32 @@
+#!/bin/sh -e
+#
+# Do a wg-junk dance on WireGuard interfaces as soon as dpinger calls
+# the monitor rs.syshook.
+#
+# ARGV[]: CLOUD_GW4 192.0.2.42 'down -> delay' '488.6 ms' '1484.3 ms' '0.0 %'
+
+ip="$2"
+state="$3"
+
+if [ "$state" = "${state#none -}" ]; then
+  exit 0 # not a 'none -> ***' transition
+fi
+
+if [ "$ip" != "${ip%:*}" ]; then
+  v=-6
+else
+  v=-4
+fi
+
+ifname=`route "$v" -n get -host "$ip" | awk '($1 == "interface:") {print $2}'`
+
+if [ -n "$ifname" ] && wg show "$ifname" listen-port >/dev/null; then
+  # FIXME: That should rather be done in background to avoid stalling OPNsense
+  # gateway_watcher.php as wg-junk takes 2-3 seconds to do it's job.
+  #
+  # Just look at timestamps in /var/log/gateways, ALERT should be 2-3 seconds earlier:
+  #
+  # 2024-11-22T14:14:19+03:00 tapk.lan dpinger-wg-junk 43830 - [meta sequenceId="1"] + wg set wg5 listen-port 63023
+  # 2024-11-22T14:14:19+03:00 tapk.lan dpinger 49357 - [meta sequenceId="2"] ALERT: CLOUD_GW4 (Addr: 192.0.2.42 Alarm: none -> loss RTT: 15.0 ms RTTd: 1.8 ms Loss: 12.0 %)
+  wg-junk "$ifname" 2>&1 | logger -t dpinger-wg-junk
+fi

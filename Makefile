@@ -235,6 +235,7 @@ build : var/ipv4.gz
 
 install-mgmt : \
 	/etc/cron.d/ip-forward-kludges \
+	/usr/local/etc/rc.syshook.d/monitor/25-wg-junk \
 	/usr/local/libexec/dpinger-kludge \
 	/usr/local/libexec/wg-kludge \
 	/usr/local/sbin/gw-status \
@@ -244,6 +245,8 @@ install-mgmt : \
 
 /etc/cron.d/ip-forward-kludges : share/cron /usr/local/libexec/wg-kludge /usr/local/libexec/dpinger-kludge
 	cp share/cron $@
+/usr/local/etc/rc.syshook.d/monitor/25-wg-junk : bin/syshook-wg-junk /usr/local/sbin/wg-junk
+	cp bin/syshook-wg-junk $@
 /usr/local/sbin/wg-junk : bin/wg-junk
 	cp bin/wg-junk $@
 /usr/local/libexec/wg-kludge : bin/wg-kludge /usr/local/sbin/wg-junk
