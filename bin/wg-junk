@@ -42,7 +42,9 @@ done
 wait
 
 cd "$td"
-grep RECV *:* || true
+# To log messages like the following:
+# RCVD (0.3009s) ICMP [192.0.2.42 > 192.0.2.24 Port 51820 unreachable (type=3/code=3) ] IP [ttl=49 id=37609 iplen=136 ]
+grep RCVD *:* || true
 cd /
 
 echo + wg set "${1}" listen-port "$randport" 1>&2
