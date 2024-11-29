@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+# That's placed into OPNsense syshook as `rcorder /etc/rc.d/* /usr/local/etc/rc.d/*`
+# starts freevrrpd right after DAEMON and that's a bit too early.
+
+service freevrrpd onestart
