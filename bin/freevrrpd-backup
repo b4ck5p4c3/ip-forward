@@ -6,10 +6,13 @@
 #   does not mean that Unbound is actually ready to serve :-)
 
 device="ngeth0"
-interface=`/usr/local/sbin/configctl interface address | /usr/local/bin/jq -r '[.[][] | select(.device == "ngeth0")] | first | .interface'`
+# `interface` can't be read yet due to some race.
 
 ifconfig "$device"
 /usr/local/sbin/configctl filter reload
 ifconfig "$device"
+
+interface=`/usr/local/sbin/configctl interface address | /usr/local/bin/jq -r '[.[][] | select(.device == "ngeth0")] | first | .interface'`
 /usr/local/sbin/configctl interface reconfigure "$interface"
-while ! drill -tQ . @localhost SOA IN; do sleep 1 done
+
+while ! drill -tQ . @localhost SOA IN; do sleep 1; done
