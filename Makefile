@@ -290,7 +290,9 @@ install-vrrp :	/boot/loader.conf \
 /usr/local/etc/rc.loader.d/25-freevrrpd : share/loader.freevrrpd
 	cp share/loader.freevrrpd $@
 /usr/local/etc/rc.syshook.d/start/90-freevrrpd : bin/syshook-freevrrpd-start
+	cp bin/syshook-freevrrpd-start $@
 /usr/local/etc/rc.syshook.d/stop/10-freevrrpd : bin/syshook-freevrrpd-stop
+	cp bin/syshook-freevrrpd-stop $@
 /usr/local/libexec/freevrrpd-backup : bin/freevrrpd-backup
 	cp bin/freevrrpd-backup $@
 /usr/local/sbin/freevrrpd : /usr/local/etc/pkg/repos/ip-forward.conf
