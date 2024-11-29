@@ -1,0 +1,15 @@
+#!/bin/sh -x
+#
+# - `filter reload` to apply interface `groups` to `ngeth0` interface
+# - `interface reconfigure` to learn a newly born interface
+# - `while ! drill` to wait for Unbound to start the service. Note, open tcp/53
+#   does not mean that Unbound is actually ready to serve :-)
+
+device="ngeth0"
+interface=`/usr/local/sbin/configctl interface address | /usr/local/bin/jq -r '[.[][] | select(.device == "ngeth0")] | first | .interface'`
+
+ifconfig "$device"
+/usr/local/sbin/configctl filter reload
+ifconfig "$device"
+/usr/local/sbin/configctl interface reconfigure "$interface"
+while ! drill -tQ . @localhost SOA IN; do sleep 1 done

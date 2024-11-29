@@ -1,0 +1,5 @@
+# For net/freevrrpd to work
+carp_load="NO"
+ng_ether_load="YES"
+ng_bridge_load="YES"
+ng_eiface_load="YES"

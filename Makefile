@@ -269,6 +269,30 @@ upgrade-unbound :
 	cp share/repos-ip-forward.conf $@
 
 ########################################################################
+# `install-vrrp`
+
+install-vrrp :	/boot/loader.conf \
+		/usr/local/etc/freevrrpd.conf \
+		/usr/local/etc/inc/system.inc \
+		/usr/local/etc/rc.loader.d/25-freevrrpd \
+		/usr/local/libexec/freevrrpd-backup \
+		/usr/local/sbin/freevrrpd
+
+/boot/loader.conf : /usr/local/etc/rc.loader.d/25-freevrrpd
+	/usr/local/etc/rc.loader
+/usr/local/etc/freevrrpd.conf : /usr/local/libexec/freevrrpd-backup share/freevrrpd.conf
+	sprg=`configctl interface address | jq -r '[.wan[] | select(.family == "inet")] | first | ("s/@@device@@/" + .device + "/; s/@@address@@/" + ((.address / ".")[0:3] | join(".")) + ".7/")'`; \
+		sed -E -e "$$sprg" <share/freevrrpd.conf >$@
+/usr/local/etc/inc/system.inc : Makefile share/system.inc.patch
+	if grep -qF "'/sbin/kldload" $@; then patch -d / -p1 <share/system.inc.patch; fi
+/usr/local/etc/rc.loader.d/25-freevrrpd : share/loader.freevrrpd
+	cp share/loader.freevrrpd $@
+/usr/local/libexec/freevrrpd-backup : bin/freevrrpd-backup
+	cp bin/freevrrpd-backup $@
+/usr/local/sbin/freevrrpd : /usr/local/etc/pkg/repos/ip-forward.conf
+	pkg install -y freevrrpd
+
+########################################################################
 # `install-2tun`
 
 # /usr/local/opnsense/service/templates/$(VENDOR)/$(APP)/ can't handle large
