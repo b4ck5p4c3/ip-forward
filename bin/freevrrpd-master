@@ -7,3 +7,6 @@ if ! ifconfig "$device" ether | grep -qF 00:00:5e:00:01: ; then
   : "$device" should be "Assigned", "Locked" and not "Enabled" in OPNsense
   service freevrrpd stop
 fi
+
+# Backgrounding to avoid loosing VRRP master.
+daemon --syslog --output-mask 3 --syslog-tag freevrrpd-master-bg /usr/local/sbin/opnsense-beep freevrrpd-master

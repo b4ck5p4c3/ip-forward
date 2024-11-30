@@ -274,6 +274,7 @@ upgrade-unbound :
 install-vrrp :	/boot/loader.conf \
 		/usr/local/etc/freevrrpd.conf \
 		/usr/local/etc/inc/system.inc \
+		/usr/local/etc/opnsense-beep.d/freevrrpd-master \
 		/usr/local/etc/rc.loader.d/25-freevrrpd \
 		/usr/local/etc/rc.syshook.d/start/90-freevrrpd \
 		/usr/local/etc/rc.syshook.d/stop/10-freevrrpd \
@@ -288,6 +289,8 @@ install-vrrp :	/boot/loader.conf \
 		sed -E -e "$$sprg" <share/freevrrpd.conf >$@
 /usr/local/etc/inc/system.inc : Makefile share/system.inc.patch
 	if grep -qF "'/sbin/kldload" $@; then patch -d / -p1 <share/system.inc.patch; fi
+/usr/local/etc/opnsense-beep.d/freevrrpd-master : share/opnsense-beep.freevrrpd-master
+	cp share/opnsense-beep.freevrrpd-master $@
 /usr/local/etc/rc.loader.d/25-freevrrpd : share/loader.freevrrpd
 	cp share/loader.freevrrpd $@
 /usr/local/etc/rc.syshook.d/start/90-freevrrpd : bin/syshook-freevrrpd-start
@@ -296,7 +299,7 @@ install-vrrp :	/boot/loader.conf \
 	cp bin/syshook-freevrrpd-stop $@
 /usr/local/libexec/freevrrpd-backup : bin/freevrrpd-backup
 	cp bin/freevrrpd-backup $@
-/usr/local/libexec/freevrrpd-master : bin/freevrrpd-master
+/usr/local/libexec/freevrrpd-master : bin/freevrrpd-master /usr/local/etc/opnsense-beep.d/freevrrpd-master
 	cp bin/freevrrpd-master $@
 /usr/local/sbin/freevrrpd : /usr/local/etc/pkg/repos/ip-forward.conf
 	pkg install -y freevrrpd
