@@ -4,6 +4,7 @@
 # - `interface reconfigure` to learn a newly born interface
 # - `while ! drill` to wait for Unbound to start the service. Note, open tcp/53
 #   does not mean that Unbound is actually ready to serve :-)
+#   Note, the script does not wait for VPN gateway/DNS to be UP.
 
 device="ngeth0"
 interface=`/usr/local/bin/xmllint --xpath 'name(/opnsense/interfaces/*/if[text()="ngeth0"]/..)' /conf/config.xml`

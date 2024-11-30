@@ -1,0 +1,9 @@
+#!/bin/sh -x
+#
+# Report new IP to configd. It's not backgrounding intentionally - VRRP should rather
+# flap if newip() takes too long and signal about a potential problem right now.
+
+device="ngeth0"
+interface=`/usr/local/bin/xmllint --xpath 'name(/opnsense/interfaces/*/if[text()="ngeth0"]/..)' /conf/config.xml`
+
+configctl interface newip "$interface"

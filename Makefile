@@ -278,11 +278,12 @@ install-vrrp :	/boot/loader.conf \
 		/usr/local/etc/rc.syshook.d/start/90-freevrrpd \
 		/usr/local/etc/rc.syshook.d/stop/10-freevrrpd \
 		/usr/local/libexec/freevrrpd-backup \
+		/usr/local/libexec/freevrrpd-master \
 		/usr/local/sbin/freevrrpd
 
 /boot/loader.conf : /usr/local/etc/rc.loader.d/25-freevrrpd
 	/usr/local/etc/rc.loader
-/usr/local/etc/freevrrpd.conf : /usr/local/libexec/freevrrpd-backup share/freevrrpd.conf
+/usr/local/etc/freevrrpd.conf : /usr/local/libexec/freevrrpd-backup /usr/local/libexec/freevrrpd-master share/freevrrpd.conf
 	sprg=`configctl interface address | jq -r '[.wan[] | select(.family == "inet")] | first | ("s/@@device@@/" + .device + "/; s/@@address@@/" + ((.address / ".")[0:3] | join(".")) + ".7/")'`; \
 		sed -E -e "$$sprg" <share/freevrrpd.conf >$@
 /usr/local/etc/inc/system.inc : Makefile share/system.inc.patch
@@ -295,6 +296,8 @@ install-vrrp :	/boot/loader.conf \
 	cp bin/syshook-freevrrpd-stop $@
 /usr/local/libexec/freevrrpd-backup : bin/freevrrpd-backup
 	cp bin/freevrrpd-backup $@
+/usr/local/libexec/freevrrpd-master : bin/freevrrpd-master
+	cp bin/freevrrpd-master $@
 /usr/local/sbin/freevrrpd : /usr/local/etc/pkg/repos/ip-forward.conf
 	pkg install -y freevrrpd
 
