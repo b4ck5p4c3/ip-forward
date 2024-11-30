@@ -1,0 +1,2 @@
+#!/bin/sh
+test "`unbound-control-dns2tun forward`" = 127.6.6.6 && flock --exclusive --close /var/run/dns2tun-kludge.lock /usr/local/etc/rc.syshook.d/monitor/25-dns2tun

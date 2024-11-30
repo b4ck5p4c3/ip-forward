@@ -224,6 +224,8 @@ build : var/ipv4.gz
 install-mgmt : \
 	/etc/cron.d/ip-forward-kludges \
 	/usr/local/etc/rc.syshook.d/monitor/25-wg-junk \
+	/usr/local/etc/rc.syshook.d/start/81-dpinger-kludge \
+	/usr/local/etc/rc.syshook.d/start/83-wg-kludge \
 	/usr/local/libexec/dpinger-kludge \
 	/usr/local/libexec/wg-kludge \
 	/usr/local/sbin/gw-status \
@@ -235,6 +237,10 @@ install-mgmt : \
 	cp share/cron $@
 /usr/local/etc/rc.syshook.d/monitor/25-wg-junk : bin/syshook-wg-junk /usr/local/sbin/wg-junk
 	cp bin/syshook-wg-junk $@
+/usr/local/etc/rc.syshook.d/start/81-dpinger-kludge : bin/syshook-start-dpinger-kludge /usr/local/libexec/dpinger-kludge
+	cp bin/syshook-start-dpinger-kludge $@
+/usr/local/etc/rc.syshook.d/start/83-wg-kludge : bin/syshook-start-wg-kludge /usr/local/libexec/wg-kludge
+	cp bin/syshook-start-wg-kludge $@
 /usr/local/sbin/wg-junk : bin/wg-junk
 	cp bin/wg-junk $@
 /usr/local/libexec/wg-kludge : bin/wg-kludge /usr/local/sbin/wg-junk
@@ -316,6 +322,7 @@ install-2tun : 	build \
 		install-unbound \
 		/usr/local/sbin/unbound-control-dns2tun \
 		/usr/local/etc/rc.syshook.d/monitor/25-dns2tun \
+		/usr/local/etc/rc.syshook.d/start/85-dns2tun \
 		/usr/local/etc/rc.syshook.d/early/50-ip2tun \
 		/var/db/aliastables/ip2tun.gz \
 		/var/run/unbound-dns2tun.pid
@@ -324,6 +331,8 @@ install-2tun : 	build \
 
 /usr/local/etc/rc.syshook.d/monitor/25-dns2tun : bin/syshook-dns2tun /usr/local/sbin/unbound-control-dns2tun
 	cp bin/syshook-dns2tun $@
+/usr/local/etc/rc.syshook.d/start/85-dns2tun : bin/syshook-start-dns2tun
+	cp bin/syshook-start-dns2tun $@
 /usr/local/sbin/unbound-control-dns2tun : bin/unbound-control-dns2tun
 	cp bin/unbound-control-dns2tun $@
 /usr/local/etc/unbound/dns2tun.conf : share/unbound-dns2tun.conf

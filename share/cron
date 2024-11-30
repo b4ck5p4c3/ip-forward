@@ -1,4 +1,4 @@
 # Ad-hoc OPNsense kludges -- https://github.com/b4ck5p4c3/ip-forward
 1-59/4	*	*	*	*	root	flock --exclusive --nonblock --close /var/run/dpinger-kludge.lock /usr/local/libexec/dpinger-kludge
-2-59/4	*	*	*	*	root	test -x /usr/local/sbin/unbound-control-dns2tun && test "`unbound-control-dns2tun forward`" = 127.6.6.6 && flock --exclusive --nonblock --close /var/run/dns2tun-kludge.lock /usr/local/etc/rc.syshook.d/monitor/25-dns2tun
-3-59/4	*	*	*	*	root	flock --exclusive --nonblock --close /var/run/wg-kludge.lock /usr/local/libexec/wg-kludge
+2-59/4	*	*	*	*	root	flock --exclusive --nonblock --close /var/run/wg-kludge.lock /usr/local/libexec/wg-kludge
+3-59/4	*	*	*	*	root	test -x /usr/local/sbin/unbound-control-dns2tun -a "`unbound-control-dns2tun forward`" = 127.6.6.6 && flock --exclusive --nonblock --close /var/run/dns2tun-kludge.lock /usr/local/etc/rc.syshook.d/monitor/25-dns2tun

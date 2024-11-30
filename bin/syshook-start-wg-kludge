@@ -1,0 +1,3 @@
+#!/bin/sh
+
+flock --exclusive --close /var/run/wg-kludge.lock /usr/local/libexec/wg-kludge

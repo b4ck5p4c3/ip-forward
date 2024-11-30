@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/usr/local/bin/flock --exclusive --close /var/run/dpinger-kludge.lock /usr/local/libexec/dpinger-kludge

@@ -10,3 +10,8 @@ if pluginctl -s dpinger status | grep -qF 'is not running'; then
     pluginctl -s dpinger status | logger -t dpinger-kludge
     pluginctl -s dpinger restart
 fi
+
+# `none ~`: not-checked, `down ~`: no data yet, `down 100.0 %`: truly down
+while [ `pluginctl -r return_gateways_status | jq '[.dpinger[] | select(.status == "down" and .monitor != "~" and .loss == "~")] | length'` -ne 0 ]; do
+    sleep 1
+done
