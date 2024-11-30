@@ -280,7 +280,8 @@ install-vrrp :	/boot/loader.conf \
 		/usr/local/etc/rc.syshook.d/stop/10-freevrrpd \
 		/usr/local/libexec/freevrrpd-backup \
 		/usr/local/libexec/freevrrpd-master \
-		/usr/local/sbin/freevrrpd
+		/usr/local/sbin/freevrrpd \
+		/usr/local/sbin/opnsense-beep
 
 /boot/loader.conf : /usr/local/etc/rc.loader.d/25-freevrrpd
 	/usr/local/etc/rc.loader
@@ -299,10 +300,12 @@ install-vrrp :	/boot/loader.conf \
 	cp bin/syshook-freevrrpd-stop $@
 /usr/local/libexec/freevrrpd-backup : bin/freevrrpd-backup
 	cp bin/freevrrpd-backup $@
-/usr/local/libexec/freevrrpd-master : bin/freevrrpd-master /usr/local/etc/opnsense-beep.d/freevrrpd-master
+/usr/local/libexec/freevrrpd-master : bin/freevrrpd-master /usr/local/etc/opnsense-beep.d/freevrrpd-master /usr/local/sbin/opnsense-beep
 	cp bin/freevrrpd-master $@
 /usr/local/sbin/freevrrpd : /usr/local/etc/pkg/repos/ip-forward.conf
 	pkg install -y freevrrpd
+/usr/local/sbin/opnsense-beep : share/opnsense-beep.patch
+	if ! grep -qF 'flock' $@; then patch -d / -p1 <share/opnsense-beep.patch; fi
 
 ########################################################################
 # `install-2tun`

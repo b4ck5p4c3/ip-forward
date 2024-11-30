@@ -1,0 +1,11 @@
+--- a/usr/local/sbin/opnsense-beep	2024-11-30 11:16:57.974064000 +0300
++++ b/usr/local/sbin/opnsense-beep	2024-11-30 11:28:44.727562000 +0300
+@@ -63,6 +63,8 @@
+ 	exit 1
+ fi
+ 
++exec 9<>/var/run/opnsense-beep.lock
++/usr/local/bin/flock --exclusive 9
+ cat "${BEEPFILE}" | while read NOTE DURATION; do
+ 	/usr/local/bin/beep -p "${NOTE}" "${DURATION}"
+ done
