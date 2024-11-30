@@ -6,4 +6,5 @@
 device="ngeth0"
 interface=`/usr/local/bin/xmllint --xpath 'name(/opnsense/interfaces/*/if[text()="ngeth0"]/..)' /conf/config.xml`
 
-/usr/local/sbin/configctl interface newip "$interface"
+# Backgrounding to avoid loosing VRRP master as `interfaces newip` may take a few seconds.
+daemon --syslog --output-mask 3 --syslog-tag freevrrpd-master-bg /usr/local/sbin/configctl interface newip "$interface"

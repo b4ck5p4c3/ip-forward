@@ -14,6 +14,7 @@ interface=`/usr/local/bin/xmllint --xpath 'name(/opnsense/interfaces/*/if[text()
 /usr/local/sbin/configctl interface reconfigure "$interface"
 
 # $device has no IP at this point and `reconfigure` does not grok that for some reason.
-/usr/local/sbin/configctl interface newip "$interface"
+# However, `configctl` has hard time learning "no IP" situation and complains about it,
+# so `interface newip` is not called here.
 
 while ! drill -tQ . @localhost SOA IN; do sleep 1; done
