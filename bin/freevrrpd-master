@@ -1,10 +1,9 @@
 #!/bin/sh -x
-#
-# Report new IP to configd. It's not backgrounding intentionally - VRRP should rather
-# flap if newip() takes too long and signal about a potential problem right now.
 
 device="ngeth0"
-interface=`/usr/local/bin/xmllint --xpath 'name(/opnsense/interfaces/*/if[text()="ngeth0"]/..)' /conf/config.xml`
 
-# Backgrounding to avoid loosing VRRP master as `interfaces newip` may take a few seconds.
-daemon --syslog --output-mask 3 --syslog-tag freevrrpd-master-bg /usr/local/sbin/configctl interface newip "$interface"
+# Go MAD if VMAC is missing in MASTER mode. That's not a good VRRP setup. :-)
+if ! ifconfig "$device" ether | grep -qF 00:00:5e:00:01: ; then
+  : "$device" should be "Assigned", "Locked" and not "Enabled" in OPNsense
+  service freevrrpd stop
+fi

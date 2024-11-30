@@ -1,25 +1,16 @@
 #!/bin/sh -x
-#
-# - `filter reload` to apply interface `groups` to `ngeth0` interface
-# - `interface reconfigure` to learn a newly born interface
-# - `while ! drill` to wait for Unbound to start the service. Note, open tcp/53
-#   does not mean that Unbound is actually ready to serve :-)
-#   Note, the script does not wait for VPN gateway/DNS to be UP.
 
 device="ngeth0"
-interface=`/usr/local/bin/xmllint --xpath 'name(/opnsense/interfaces/*/if[text()="ngeth0"]/..)' /conf/config.xml`
 
-if ! ifconfig "$device" ether | grep -qF 00:00:5e:00:01:07; then
-  # FreeVRRPd fails to set VMAC on the interface for some reason O_o
-  ifconfig "$device" ether 00:00:5e:00:01:07
-fi
-
+# Apply interface `groups` to `ngeth0` interfaca.e
+ifconfig "$device"
 /usr/local/sbin/configctl filter reload
+ifconfig "$device"
 
-/usr/local/sbin/configctl interface reconfigure "$interface"
+# There is no `interface reconfigure` and/or `interface newip` to avoid
+# OPNsense resetting VMAC address.
 
-# $device has no IP at this point and `reconfigure` does not grok that for some reason.
-# However, `configctl` has hard time learning "no IP" situation and complains about it,
-# so `interface newip` is not called here.
-
+# Wait for Unbound to start the service.
+# Note, open tcp/53 does not mean that Unbound is actually ready to serve.
+# Note, the script does not wait for VPN gateway/DNS to be UP.
 while ! drill -tQ . @localhost SOA IN; do sleep 1; done
