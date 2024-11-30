@@ -9,10 +9,11 @@
 device="ngeth0"
 interface=`/usr/local/bin/xmllint --xpath 'name(/opnsense/interfaces/*/if[text()="ngeth0"]/..)' /conf/config.xml`
 
-ifconfig "$device"
 /usr/local/sbin/configctl filter reload
-ifconfig "$device"
 
 /usr/local/sbin/configctl interface reconfigure "$interface"
+
+# $device has no IP at this point and `reconfigure` does not grok that for some reason.
+/usr/local/sbin/configctl interface newip "$interface"
 
 while ! drill -tQ . @localhost SOA IN; do sleep 1; done
