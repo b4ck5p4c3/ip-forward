@@ -6,4 +6,4 @@
 device="ngeth0"
 interface=`/usr/local/bin/xmllint --xpath 'name(/opnsense/interfaces/*/if[text()="ngeth0"]/..)' /conf/config.xml`
 
-configctl interface newip "$interface"
+/usr/local/sbin/configctl interface newip "$interface"
