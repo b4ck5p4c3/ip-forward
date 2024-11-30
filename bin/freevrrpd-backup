@@ -9,6 +9,11 @@
 device="ngeth0"
 interface=`/usr/local/bin/xmllint --xpath 'name(/opnsense/interfaces/*/if[text()="ngeth0"]/..)' /conf/config.xml`
 
+if ! ifconfig "$device" ether | grep -qF 00:00:5e:00:01:07; then
+  # FreeVRRPd fails to set VMAC on the interface for some reason O_o
+  ifconfig "$device" ether 00:00:5e:00:01:07
+fi
+
 /usr/local/sbin/configctl filter reload
 
 /usr/local/sbin/configctl interface reconfigure "$interface"
