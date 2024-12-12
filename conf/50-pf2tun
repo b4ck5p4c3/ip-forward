@@ -49,7 +49,7 @@ done
 
 # Second, we take care of the forwarded traffic.
 # #daily_OPNsense: note, it's destination/address/dns2tun, not destination/network/dns2tun ;-)
-wait4filter_ "interface/text()='${gwid}' and direction/text()='in' and ipprotocol/text()='inet46' and protocol/text()='tcp/udp' and source/network/text()='${gwid}' and destination/network/text()='(self)' and port/text()='53'"
+wait4filter_ "interface/text()='${gwid}' and direction/text()='in' and ipprotocol/text()='inet46' and protocol/text()='tcp/udp' and source/network/text()='${gwid}' and destination/network/text()='(self)' and destination/port/text()='53'"
 wait4filter_ "interface/text()='${gwid}' and direction/text()='in' and ipprotocol/text()='inet' and source/network/text()='${gwid}' and destination/address/text()='dns2tun' and gateway/text()='VPNgwgrp' and statetype='keep state'"
 wait4filter_ "interface/text()='${gwid}' and direction/text()='in' and ipprotocol/text()='inet' and source/network/text()='${gwid}' and destination/address/text()='ip2tun' and gateway/text()='VPNgwgrp' and statetype='keep state'"
 # The reason for sloppy-state being required both on `in` and `out` is not 100% clear to me, but it affects
