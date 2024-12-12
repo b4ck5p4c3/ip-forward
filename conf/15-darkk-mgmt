@@ -20,19 +20,19 @@ fi
 # as WireGuard interface is created and control is lost.
 
 r=`opnsense-api interfaces/overview/interfacesInfo`
-hwifcnt=`echo "$r" | jq -r '[.rows[] | select('"${IS_PHYSICAL}"')] | length'`
+hwifcnt=`jq -nr --argjson r "$r" '[$r.rows[] | select('"${IS_PHYSICAL}"')] | length'`
 test "$hwifcnt" -ge 1
 if [ "$hwifcnt" -eq 1 ]; then
-  l2ifid=`echo "$r" | jq -r '.rows[] | select('"${IS_PHYSICAL}"') | .identifier'`
+  l2ifid=`jq -nr --argjson r "$r" '$r.rows[] | select('"${IS_PHYSICAL}"') | .identifier'`
 elif [ "$hwifcnt" -ge 2 ]; then
   # FIXME: the only box like that is `uxie` so interfaces `description` is hardcoded for now
-  l2ifid=`echo "$r" | jq -r '.rows[] | select(.description == "internal") | .identifier'`
+  l2ifid=`jq -nr --argjson r "$r" '$r.rows[] | select(.description == "internal") | .identifier'`
 fi
 
 mgmt=`opnsense-api 'firewall/group/get' | jq -r '.group.ifgroupentry[].ifname | select(. == "MGMTifs")'`
 if [ "$mgmt" != MGMTifs ]; then
   q=`jq -cn --arg l2ifid "${l2ifid}" '{group:{ifname:"MGMTifs",members:$l2ifid,nogroup:"1",sequence:"5",descr:"Allow MGMT_tcp and EchoReq from connected networks, see ip-forward.git"}}'`
-  opnsense-api firewall/group/addItem/ "$q"
+  opnsense-api firewall/group/addItem "$q"
   opnsense-api firewall/group/reconfigure '{}'
 fi
 

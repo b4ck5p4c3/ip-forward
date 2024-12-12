@@ -1,0 +1,66 @@
+#!/bin/sh -ex
+
+. b4ck.subr
+
+detect_vrrp() {
+  # FreeVRRPd speak VRRPv2. I configure MikroTik to speak VRRPv2 as well.
+  timeout --preserve-status -k 5s 3s tcpdump -w /root/ip-forward/tmp/vrrp.pcap 'ip proto 112'
+  tcpdump -n -r /root/ip-forward/tmp/vrrp.pcap | grep -F 'VRRPv2, Advertisement'
+}
+
+if [ "$FORCE_VRRP" != 1 ] && ! detect_vrrp; then
+  echo "$0: no VRRP here. Either export FORCE_VRRP=1 or carry on."
+  exit 0
+fi
+
+########################################################################
+# Assign VRRP interface
+
+if ! is_vrrp_assigned; then
+  make -C /root/ip-forward install-vrrp VRRP_PRIORITY=1
+  service freevrrpd onestart
+  : https://`hostname`/interfaces_assign.php
+  until is_vrrp_assigned; do sleep 3; done
+  service freevrrpd stop
+  touch /root/ip-forward/share/freevrrpd.conf
+  make -C /root/ip-forward install-vrrp
+fi
+
+vrifid=`get_vrrp_ifid`
+
+########################################################################
+# Firewall: Groups
+
+r=`opnsense-api interfaces/overview/interfacesInfo`
+hwifcnt=`jq -nr --argjson r "$r" '[$r.rows[] | select('"${IS_PHYSICAL}"')] | length'`
+l2ifid=`jq -nr --argjson r "$r" '$r.rows[] | select('"${IS_PHYSICAL}"') | .identifier'`
+test "$hwifcnt" -eq 1
+
+apply=false
+r=`opnsense-api firewall/group/get`
+
+########################################################################
+# Add VRRP to `MGMTifs` together with WANandOnly
+
+selected=`jq -nr --arg vr "$vrifid" --argjson r "$r" '[$r.group.ifgroupentry[] | select(.ifname == "MGMTifs")] | first | .members[$vr].selected'`
+if [ "$selected" -eq 0 ]; then
+  uuid=`jq -nr --argjson r "$r" '$r.group.ifgroupentry | to_entries[] | select(.value.ifname == "MGMTifs") | .key'`
+  selected=`jq -nr --argjson r "$r" '[[$r.group.ifgroupentry[] | select(.ifname == "MGMTifs")] | first | .members | to_entries[] | select(.value.selected == 1) | .key] | join(",")'`
+  opnsense-api firewall/group/setItem/"${uuid}" '{"group":{"members":"'"${selected},${vrifid}"'"}}'
+  # curl 'https://tapk.lan/api/firewall/group/setItem/02213b90-73c8-45dd-961f-17c97cbd7405' -X POST --data-raw '{"group":{"ifname":"MGMTifs","members":"wan,opt1,opt2,opt3,opt4,opt7,opt8","nogroup":"1","sequence":"5","descr":"Allow MGMT_tcp and EchoReq from connected networks, see ip-forward.git"}}'
+  apply=true
+fi
+
+########################################################################
+# Add WAN + VRRP to `StickIfs` to unify pf2tun firewall rules.
+
+q=`jq -nr --argjson r "$r" '[$r.group.ifgroupentry[] | select(.ifname == "StickIfs")] | length'`
+if [ "$q" -eq 0 ]; then
+  q=`jq -cn --argjson m "${l2ifid},${vrifid}" '{group:{ifname:"StickIfs",members:$m,nogroup:"0",sequence:"5",descr:"WAN+VRRP for Router-on-a-Stick, see ip-forward.git"}}'`
+  opnsense-api firewall/group/addItem "$q"
+  apply=true
+fi
+
+if $apply; then
+  opnsense-api firewall/group/reconfigure '{}'
+fi

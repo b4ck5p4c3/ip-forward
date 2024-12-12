@@ -289,11 +289,13 @@ install-vrrp :	/boot/loader.conf \
 		/usr/local/sbin/freevrrpd \
 		/usr/local/sbin/opnsense-beep
 
+VRRP_PRIORITY ?= 200 # not 255!
+
 /boot/loader.conf : /usr/local/etc/rc.loader.d/25-freevrrpd
 	/usr/local/etc/rc.loader
 /usr/local/etc/freevrrpd.conf : /usr/local/libexec/freevrrpd-backup /usr/local/libexec/freevrrpd-master share/freevrrpd.conf
 	sprg=`configctl interface address | jq -r '[.wan[] | select(.family == "inet")] | first | ("s/@@device@@/" + .device + "/; s/@@address@@/" + ((.address / ".")[0:3] | join(".")) + ".7/")'`; \
-		sed -E -e "$$sprg" <share/freevrrpd.conf >$@
+		sed -E -e "$$sprg" -e "s/@@priority@@/$(VRRP_PRIORITY)/" <share/freevrrpd.conf >$@
 /usr/local/etc/inc/system.inc : Makefile share/system.inc.patch
 	if grep -qF "'/sbin/kldload" $@; then patch -d / -p1 <share/system.inc.patch; fi
 /usr/local/etc/opnsense-beep.d/freevrrpd-master : share/opnsense-beep.freevrrpd-master

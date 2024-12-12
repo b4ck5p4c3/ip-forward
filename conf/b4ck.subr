@@ -60,12 +60,16 @@ wait4confx() {
   done
 }
 
+wait4filter_() {
+  wait4conf "/opnsense/filter/rule[${1}]" '</rule>$'
+}
+
 wait4filter() {
   wait4confx /opnsense/filter/rule "$@"
 }
 
 wait4natout() {
-  wait4confx /opnsense/nat/outbound/rule "$@"
+  wait4conf "/opnsense/nat/outbound/rule[${1}]" '</rule>$'
 }
 
 wireguard_enable() {
@@ -74,4 +78,13 @@ wireguard_enable() {
   if [ "$c" -ne 1 ]; then
     opnsense-api wireguard/general/set '{"general":{"enabled":"1"}}'
   fi
+}
+
+get_vrrp_ifid() {
+  # Note: ngeth0 is hardcoded here and in `freevrrpd-backup` script.
+  xmllint --format --xpath 'name(/opnsense/interfaces/*[if/text()="ngeth0" and lock/text()="1" and not (enable/text()="1")])' /conf/config.xml
+}
+
+is_vrrp_assigned() {
+  test -n "`get_vrrp_ifid`"
 }

@@ -78,7 +78,7 @@ if [ -n "$nat4" ]; then
   if2id=`opnsense-api interfaces/overview/interfacesInfo | jq -c '[.rows[] | {key: .description, value: .identifier}] | from_entries'`
   for ifname in $nat4; do
     id=`jq -nr --argjson id2id "$if2id" --arg ifname "$ifname" '$id2id[$ifname]'`
-    wait4natout "interface>${id}" 'ipprotocol>inet' 'not>1' "network>${id}ip" 'destination><any>1' "target>${id}ip" 'staticnatport>1'
+    wait4natout "interface/text()='${id}' and ipprotocol/text()='inet' and source/not/text()='1' and source/network/text()='${id}ip' and destination/any/text()='1' and target/text()='${id}ip' and staticnatport/text()='1'"
   done
 fi
 

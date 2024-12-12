@@ -6,7 +6,10 @@ ifinfo=`opnsense-api interfaces/overview/interfacesInfo`
 hwifcnt=`jq -rn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | select('"${IS_PHYSICAL}"')] | length'`
 test "$hwifcnt" -eq 1 # This script is for Router-on-a-Stick for this moment.
 
-wait4confx /opnsense/gateways/gateway_group 'name>VPNgwgrp' 'trigger>down'
+########################################################################
+# Gateway group VPNgwgrp
+
+wait4conf '/opnsense/gateways/gateway_group[name/text()="VPNgwgrp" and trigger/text()="down"]' '</gateway_group>$'
 
 ########################################################################
 # Firewall: NAT: Outbound. https://$(hostname)/firewall_nat_out.php
@@ -18,14 +21,17 @@ wait4confx /opnsense/gateways/gateway_group 'name>VPNgwgrp' 'trigger>down'
 
 jsls=`ls -d ~/.opn*.json`
 wgifs=`jq -r '.wggw[].if' $jsls`
-gwid=`jq -rn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | select('"${IS_PHYSICAL}"')] | first | .identifier'`
+gwid=`get_vrrp_ifid`
+if [ -n "$gwid" ]; then # No VRRP, WANandOnly wins
+  gwid=`jq -rn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | select('"${IS_PHYSICAL}"')] | first | .identifier'`
+fi
 if2id=`jq -cn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | {key: .description, value: .identifier}] | from_entries'`
 
 for ifname in $wgifs; do
   id=`jq -rn --argjson id2id "$if2id" --arg ifname "$ifname" '$id2id[$ifname]'`
   : nat-n-tag
-  wait4natout "interface>${gwid}" 'ipprotocol>inet' 'source><network>\(self\)' 'destination><network>dns2tun' "target>${id}ip" 'staticnatport>1' "tag>via-${ifname}"
-  wait4natout "interface>${gwid}" 'ipprotocol>inet' 'source><network>\(self\)' 'destination><network>ip2tun' "target>${id}ip" 'staticnatport>1' "tag>via-${ifname}"
+  wait4natout "interface/text()='${gwid}' and ipprotocol/text()='inet' and source/network/text()='(self)' and destination/network/text()='dns2tun' and target/text()='${id}ip' and staticnatport/text()='1' and tag/text()='via-${ifname}'"
+  wait4natout "interface/text()='${gwid}' and ipprotocol/text()='inet' and source/network/text()='(self)' and destination/network/text()='ip2tun' and target/text()='${id}ip' and staticnatport/text()='1' and tag/text()='via-${ifname}'"
 done
 
 ########################################################################
@@ -44,12 +50,9 @@ done
 # #daily_OPNsense: note, it's destination/address/dns2tun, not destination/network/dns2tun ;-)
 wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet46' 'protocol>tcp\/udp' 'source><network>wan' 'destination><network>\(self\)' 'port>53'
 wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet' 'source><network>wan' 'destination><address>dns2tun' 'gateway>VPNgwgrp' 'statetype>keep state'
-wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet' 'source><network>wan' 'destination><address>ip2tun' 'gateway>VPNgwgrp' 'statetype>keep state'
+wait4filter "interface>${gwid}" 'direction>in' 'ipprotocol>inet' 'source><network>wan' 'destination><address>ip2tun'  'gateway>VPNgwgrp' 'statetype>keep state'
 # The reason for sloppy-state being required both on `in` and `out` is not 100% clear to me, but it affects
 # session lifetime.  https://speedtest.net shows 0.1 Mbit/s upload without direction>out rule.
-wait4filter "interface>${gwid}" 'direction>in'  'ipprotocol>inet' 'source><network>wan' 'not>1' 'network>\(self\)' 'statetype>sloppy state'
-wait4filter "interface>${gwid}" 'direction>out' 'ipprotocol>inet' 'source><network>wan' 'not>1' 'network>\(self\)' 'statetype>sloppy state'
-
-# TODO: take care of DNS.
-# TODO: take care of faster do-something-on-loss.
-# TODO: take care of faster do-something-on-down.
+# disablereplyto prevents replies to local packets (e.g. ICMP pongs) getting routed back to default gateway O_o
+wait4filter "interface>${gwid}" 'direction>in'  'ipprotocol>inet' 'source><network>wan' 'not>1' 'network>\(self\)' 'statetype>sloppy state' 'disablereplyto>1'
+wait4filter "interface>${gwid}" 'direction>out' 'ipprotocol>inet' 'source><network>wan' 'not>1' 'network>\(self\)' 'statetype>sloppy state' 'disablereplyto>1'
