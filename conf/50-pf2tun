@@ -55,5 +55,5 @@ wait4filter_ "interface/text()='${gwid}' and direction/text()='in' and ipprotoco
 # The reason for sloppy-state being required both on `in` and `out` is not 100% clear to me, but it affects
 # session lifetime.  https://speedtest.net shows 0.1 Mbit/s upload without direction>out rule.
 # disablereplyto prevents replies to local packets (e.g. ICMP pongs) getting routed back to default gateway O_o
-wait4filter_ "interface/text()='${gwid}' and direction/text()='in'  and ipprotocol/text()='inet' and source/network/text()='${gwid}' destination/not/text()='1' destination/network/text()='(self)' and statetype/text()='sloppy state' and disablereplyto/text()='1'"
-wait4filter_ "interface/text()='${gwid}' and direction/text()='out' and ipprotocol/text()='inet' and source/network/text()='${gwid}' destination/not/text()='1' destination/network/text()='(self)' and statetype/text()='sloppy state' and disablereplyto/text()='1'"
+wait4filter_ "interface/text()='${gwid}' and direction/text()='in'  and ipprotocol/text()='inet' and source/network/text()='${gwid}' and destination/not/text()='1' and destination/network/text()='(self)' and statetype/text()='sloppy state' and disablereplyto/text()='1'"
+wait4filter_ "interface/text()='${gwid}' and direction/text()='out' and ipprotocol/text()='inet' and source/network/text()='${gwid}' and destination/not/text()='1' and destination/network/text()='(self)' and statetype/text()='sloppy state' and disablereplyto/text()='1'"
