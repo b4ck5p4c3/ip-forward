@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Negraph-based FreeVRRPd marks virtual interface as a physical one.
+IS_PHYSICAL='(.is_physical == true and (.macaddr | test("^00:00:5e:00:01:..$"; "is") | not))'
+
 no_alias() {
   local r
   r=`opnsense-api firewall/alias/getAliasUUID/"${1}"`

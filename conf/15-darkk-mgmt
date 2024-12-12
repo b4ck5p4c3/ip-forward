@@ -20,10 +20,10 @@ fi
 # as WireGuard interface is created and control is lost.
 
 r=`opnsense-api interfaces/overview/interfacesInfo`
-hwifcnt=`echo "$r" | jq -r '[.rows[] | select(.is_physical == true)] | length'`
+hwifcnt=`echo "$r" | jq -r '[.rows[] | select('"${IS_PHYSICAL}"')] | length'`
 test "$hwifcnt" -ge 1
 if [ "$hwifcnt" -eq 1 ]; then
-  l2ifid=`echo "$r" | jq -r '.rows[] | select(.is_physical == true) | .identifier'`
+  l2ifid=`echo "$r" | jq -r '.rows[] | select('"${IS_PHYSICAL}"') | .identifier'`
 elif [ "$hwifcnt" -ge 2 ]; then
   # FIXME: the only box like that is `uxie` so interfaces `description` is hardcoded for now
   l2ifid=`echo "$r" | jq -r '.rows[] | select(.description == "internal") | .identifier'`

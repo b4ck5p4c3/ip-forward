@@ -45,7 +45,7 @@ apply="{}"
 # Otherwise it conflicts with 127.4.5.1
 un_ifs=`echo "$unconf" | jq -r '[.unbound.general.active_interface | with_entries(.value.interface = .key) | .[] | select(.selected == 1) | .interface] | join(",")'`
 if [ -z "$un_ifs" ]; then
-  single_if=`opnsense-api interfaces/overview/interfacesInfo | jq -r '[.rows[] | select(.is_physical) | .identifier] as $ifs | if $ifs | length == 1 then $ifs[0] else [].[] end'`
+  single_if=`opnsense-api interfaces/overview/interfacesInfo | jq -r '[.rows[] | select('"${IS_PHYSICAL}"') | .identifier] as $ifs | if $ifs | length == 1 then $ifs[0] else [].[] end'`
   if [ -n "$single_if" ]; then
     apply=`jq -nc --argjson a "$apply" --arg i "$single_if" '$a | .active_interface = $i'`
   else

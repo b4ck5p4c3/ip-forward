@@ -3,7 +3,7 @@
 . b4ck.subr
 
 ifinfo=`opnsense-api interfaces/overview/interfacesInfo`
-hwifcnt=`jq -rn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | select(.is_physical == true)] | length'`
+hwifcnt=`jq -rn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | select('"${IS_PHYSICAL}"')] | length'`
 test "$hwifcnt" -eq 1 # This script is for Router-on-a-Stick for this moment.
 
 wait4confx /opnsense/gateways/gateway_group 'name>VPNgwgrp' 'trigger>down'
@@ -18,7 +18,7 @@ wait4confx /opnsense/gateways/gateway_group 'name>VPNgwgrp' 'trigger>down'
 
 jsls=`ls -d ~/.opn*.json`
 wgifs=`jq -r '.wggw[].if' $jsls`
-gwid=`jq -rn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | select(.is_physical == true)] | first | .identifier'`
+gwid=`jq -rn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | select('"${IS_PHYSICAL}"')] | first | .identifier'`
 if2id=`jq -cn --argjson ifinfo "$ifinfo" '[$ifinfo.rows[] | {key: .description, value: .identifier}] | from_entries'`
 
 for ifname in $wgifs; do
