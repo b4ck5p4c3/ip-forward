@@ -56,7 +56,7 @@ fi
 
 q=`jq -nr --argjson r "$r" '[$r.group.ifgroupentry[] | select(.ifname == "StickIfs")] | length'`
 if [ "$q" -eq 0 ]; then
-  q=`jq -cn --argjson m "${l2ifid},${vrifid}" '{group:{ifname:"StickIfs",members:$m,nogroup:"0",sequence:"5",descr:"WAN+VRRP for Router-on-a-Stick, see ip-forward.git"}}'`
+  q=`jq -cn --arg m "${l2ifid},${vrifid}" '{group:{ifname:"StickIfs",members:$m,nogroup:"0",sequence:"5",descr:"WAN+VRRP for Router-on-a-Stick, see ip-forward.git"}}'`
   opnsense-api firewall/group/addItem "$q"
   apply=true
 fi
