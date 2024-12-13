@@ -47,6 +47,7 @@ if [ "$count" -ne 1 ]; then
   opnsense-api interfaces/loopback_settings/addItem '{"loopback":{"description":"loVRRP"}}'
 fi
 
+wait4iflist '["loVRRP"]'
 wait4ifconf '["loVRRP"]' '{"ipaddr":"'${vripv4}'","subnet":"32"}'
 
 ########################################################################
