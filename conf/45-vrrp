@@ -27,12 +27,38 @@ if ! is_vrrp_assigned; then
   service freevrrpd onestart
   : https://`hostname`/interfaces_assign.php
   until is_vrrp_assigned; do sleep 3; done
+  vripv4=`configctl interface address | jq -r '.[][] | select(.device == "ngeth0" and .family == "inet").address'`
+  test -n "$vripv4"
   service freevrrpd stop
   touch /root/ip-forward/share/freevrrpd.conf
   make -C /root/ip-forward install-vrrp
 fi
 
 vrifid=`get_vrrp_ifid`
+
+########################################################################
+# Interfaces: Other Types: Loopback
+#
+# For unbound to be able to bind to VIP when router is not VRRP Master.
+# That's needed to avoid slow restart during Backup->Master promotion.
+
+count=`opnsense-api interfaces/loopback_settings/searchItem | jq '[.rows[] | select(.description == "loVRRP")] | length'`
+if [ "$count" -ne 1 ]; then
+  opnsense-api interfaces/loopback_settings/addItem '{"loopback":{"description":"loVRRP"}}'
+fi
+
+wait4ifconf '["loVRRP"]' '{"ipaddr":"'${vripv4}'","subnet":"32"}'
+
+########################################################################
+# Services: Unbound DNS: General
+
+unconf=`opnsense-api unbound/settings/get`
+r=`jq -rn --argjson u "$unconf" '["loVRRP"] - [$u.unbound.general.active_interface[] | select(.selected == 1).value] | length'`
+if [ "$r" = '0' ]; then
+  un_ifs=`jq -rn --argjson u "$unconf" '[.unbound.general.active_interface | to_entries[] | select(.value.selected == 1 or .value.value == "loVRRP").key] | join(",")'`
+  opnsense-api unbound/settings/set '{"unbound":{"general":{"active_interface":"'${un_ifs}'"}}}'
+  opnsense-api unbound/service/reconfigureGeneral '{}'
+fi
 
 ########################################################################
 # Firewall: Groups
