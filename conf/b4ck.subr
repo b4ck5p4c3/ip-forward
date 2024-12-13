@@ -88,3 +88,17 @@ get_vrrp_ifid() {
 is_vrrp_assigned() {
   test -n "`get_vrrp_ifid`"
 }
+
+kld_maybe_load() {
+  local mod="$1"
+  if ! kldstat -m "${mod}"; then
+    kldload "${mod}"
+  fi
+}
+
+kld_maybe_unload() {
+  local mod="$1"
+  if kldstat -m "${mod}"; then
+    kldunload "${mod}"
+  fi
+}

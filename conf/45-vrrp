@@ -16,6 +16,12 @@ fi
 ########################################################################
 # Assign VRRP interface
 
+# Make FreeVRRPd happy right now!
+kld_maybe_unload carp
+kld_maybe_load ng_eiface
+kld_maybe_load ng_bridge
+kld_maybe_load ng_ether
+
 if ! is_vrrp_assigned; then
   make -C /root/ip-forward install-vrrp VRRP_PRIORITY=1
   service freevrrpd onestart
