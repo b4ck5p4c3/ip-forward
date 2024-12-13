@@ -27,14 +27,14 @@ if ! is_vrrp_assigned; then
   service freevrrpd onestart
   : https://`hostname`/interfaces_assign.php
   until is_vrrp_assigned; do sleep 3; done
-  vripv4=`configctl interface address | jq -r '.[][] | select(.device == "ngeth0" and .family == "inet").address'`
-  test -n "$vripv4"
   service freevrrpd stop
   touch /root/ip-forward/share/freevrrpd.conf
   make -C /root/ip-forward install-vrrp
 fi
 
 vrifid=`get_vrrp_ifid`
+vripv4=`awk '($1 == "addr") { print $3 }' /usr/local/etc/freevrrpd.conf | sed 's,/.*,,'`
+test -n "$vripv4"
 
 ########################################################################
 # Interfaces: Other Types: Loopback
