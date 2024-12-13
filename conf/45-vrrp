@@ -56,7 +56,7 @@ wait4ifconf '["loVRRP"]' '{"ipaddr":"'${vripv4}'","subnet":"32"}'
 
 unconf=`opnsense-api unbound/settings/get`
 r=`jq -rn --argjson u "$unconf" '["loVRRP"] - [$u.unbound.general.active_interface[] | select(.selected == 1).value] | length'`
-if [ "$r" = '0' ]; then
+if [ "$r" = 1 ]; then
   un_ifs=`jq -rn --argjson u "$unconf" '[.unbound.general.active_interface | to_entries[] | select(.value.selected == 1 or .value.value == "loVRRP").key] | join(",")'`
   opnsense-api unbound/settings/set '{"unbound":{"general":{"active_interface":"'${un_ifs}'"}}}'
   opnsense-api unbound/service/reconfigureGeneral '{}'
