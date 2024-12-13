@@ -45,6 +45,7 @@ test -n "$vripv4"
 count=`opnsense-api interfaces/loopback_settings/searchItem | jq '[.rows[] | select(.description == "loVRRP")] | length'`
 if [ "$count" -ne 1 ]; then
   opnsense-api interfaces/loopback_settings/addItem '{"loopback":{"description":"loVRRP"}}'
+  opnsense-api interfaces/loopback_settings/reconfigure '{}'
 fi
 
 wait4iflist '["loVRRP"]'
