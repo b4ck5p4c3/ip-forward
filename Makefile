@@ -13,6 +13,7 @@ V2FLY_SERVICES := \
     intel \
     intel-dev \
     netflix \
+    notion \
     openai \
     qualcomm \
     signal \
