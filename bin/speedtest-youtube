@@ -1,0 +1,29 @@
+#!/bin/sh
+
+host="${1:-speedtest.stockholm.linode.com}"
+fqex=`uuidgen -r | cut -d - -f 5`.example.com
+fqyt=`uuidgen -r | cut -d - -f 5`.googlevideo.com
+hostlen=`echo -ne "${host}\n${fqex}\n${fqyt}\n" | wc -L`
+ipv4=`host -t A "$host" | awk '/has address/ {print $NF; exit}'`
+
+if [ -z "$ipv4" ]; then
+  echo "$0: $host has no IPv4 address" 1>&2
+  host -t A "$host" 1>&2
+  exit 1
+fi
+
+for h in ${host} ${fqex} ${fqyt}; do
+  if [ "$h" = "${host}" ]; then
+    insecure=""
+  else
+    insecure="--insecure"
+  fi
+
+  hpad=`printf "%-${hostlen}s" "$h"`
+  curl -sS --output /dev/null \
+    $insecure \
+    --max-time 10 \
+    --write-out "${hpad} %{remote_ip}:%{remote_port} TTFB %{time_starttransfer} Time %{time_total} %{speed_download} B/s HTTP/%{http_version} %{response_code}\n" \
+    --resolve "${h}:443:${ipv4}" \
+    "https://${h}/100MB-gh:b4ck5p4c3/ip-forward.bin"
+done

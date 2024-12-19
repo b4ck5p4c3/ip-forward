@@ -1,0 +1,50 @@
+#!/bin/sh
+#
+# Hosts from https://www.linode.com/speed-test/
+
+td=`mktemp -d`
+trap 'rm -rf "${td}"' EXIT
+
+for host in \
+    au-mel.speedtest.linode.com \
+    de-fra-2.speedtest.linode.com \
+    gb-lon.speedtest.linode.com \
+    in-bom-2.speedtest.linode.com \
+    jp-tyo-3.speedtest.linode.com \
+    sg-sin-2.speedtest.linode.com \
+    speedtest.amsterdam.linode.com \
+    speedtest.atlanta.linode.com \
+    speedtest.chennai.linode.com \
+    speedtest.chicago.linode.com \
+    speedtest.dallas.linode.com \
+    speedtest.frankfurt.linode.com \
+    speedtest.fremont.linode.com \
+    speedtest.jakarta.linode.com \
+    speedtest.london.linode.com \
+    speedtest.los-angeles.linode.com \
+    speedtest.madrid.linode.com \
+    speedtest.miami.linode.com \
+    speedtest.milan.linode.com \
+    speedtest.mumbai1.linode.com \
+    speedtest.newark.linode.com \
+    speedtest.osaka.linode.com \
+    speedtest.paris.linode.com \
+    speedtest.sao-paulo.linode.com \
+    speedtest.seattle.linode.com \
+    speedtest.singapore.linode.com \
+    speedtest.stockholm.linode.com \
+    speedtest.sydney.linode.com \
+    speedtest.tokyo2.linode.com \
+    speedtest.toronto1.linode.com \
+    speedtest.washington.linode.com \
+; do
+  {
+    ping -qn -c 1 "$host" >/dev/null 2>&1 # warm-up DNS, ARP and others
+    ping -qn -i 0.05 -c 100 "$host" >"${td}/${host}" 2>&1
+  } &
+done
+wait
+
+cd "${td}"
+grep -F -e min/avg/max *.linode.com | sort -n -k 4,4
+cd /
