@@ -3,7 +3,7 @@
 host="${1:-speedtest.stockholm.linode.com}"
 fqex=`uuidgen -r | cut -d - -f 5`.example.com
 fqyt=`uuidgen -r | cut -d - -f 5`.googlevideo.com
-hostlen=`echo -ne "${host}\n${fqex}\n${fqyt}\n" | wc -L`
+hostlen=`{ echo "${host}"; echo "${fqex}"; echo "${fqyt}" ; } | wc -L`
 ipv4=`host -t A "$host" | awk '/has address/ {print $NF; exit}'`
 
 if [ -z "$ipv4" ]; then
