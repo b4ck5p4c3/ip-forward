@@ -5,7 +5,7 @@
 # FQDNs from https://cloudpingtest.com/digital_ocean
 
 td=`mktemp -d`
-trap ': rm -rf "${td}"' EXIT
+trap 'rm -rf "${td}"' EXIT
 
 for host in \
     ams3.digitaloceanspaces.com \
