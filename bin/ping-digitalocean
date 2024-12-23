@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# Slugs from https://docs.digitalocean.com/platform/regional-availability/
+# Skipping {nyc1,nyc2} - no such FQDNs
+# FQDNs from https://cloudpingtest.com/digital_ocean
+
+td=`mktemp -d`
+trap ': rm -rf "${td}"' EXIT
+
+for host in \
+    ams3.digitaloceanspaces.com \
+    blr1.digitaloceanspaces.com \
+    fra1.digitaloceanspaces.com \
+    lon1.digitaloceanspaces.com \
+    nyc3.digitaloceanspaces.com \
+    sfo2.digitaloceanspaces.com \
+    sfo3.digitaloceanspaces.com \
+    sgp1.digitaloceanspaces.com \
+    syd1.digitaloceanspaces.com \
+    tor1.digitaloceanspaces.com \
+; do
+  {
+    ping -qn -c 1 "$host" >/dev/null 2>&1 # warm-up DNS, ARP and others
+    ping -qn -i 0.05 -c 100 "$host" >"${td}/${host}" 2>&1
+  } &
+done
+wait
+
+cd "${td}"
+grep -F -e min/avg/max *.digitaloceanspaces.com | sort -n -k 4,4
+cd /
