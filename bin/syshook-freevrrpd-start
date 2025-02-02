@@ -3,4 +3,12 @@
 # That's placed into OPNsense syshook as `rcorder /etc/rc.d/* /usr/local/etc/rc.d/*`
 # starts freevrrpd right after DAEMON and that's a bit too early.
 
+# Otherwise carp.ko eats VRRP packets and FreeVRRPd does not get any.
+if kldstat -q -m carp; then
+    (
+        set -o xtrace
+        kldunload carp
+    ) 2>&1 | logger -t freevrrpd-syshook
+fi
+
 service freevrrpd onestart
