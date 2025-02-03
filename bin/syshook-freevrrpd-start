@@ -16,7 +16,7 @@ for needed in ng_ether ng_bridge ng_eiface; do
     if ! kldstat -q -m "$needed"; then
         (
             set -o xtrace
-            kldunload "$needed"
+            kldload "$needed"
         ) 2>&1 | logger -t freevrrpd-syshook
     fi
 done
