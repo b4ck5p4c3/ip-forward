@@ -11,4 +11,14 @@ if kldstat -q -m carp; then
     ) 2>&1 | logger -t freevrrpd-syshook
 fi
 
+# Loading the modules without reboot in case /boot/loader.conf have not kicked in yet.
+for needed in ng_ether ng_bridge ng_eiface; do
+    if ! kldstat -q -m "$needed"; then
+        (
+            set -o xtrace
+            kldunload "$needed"
+        ) 2>&1 | logger -t freevrrpd-syshook
+    fi
+done
+
 service freevrrpd onestart
