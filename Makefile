@@ -256,8 +256,10 @@ install-mgmt : \
 	cp bin/unbound-control-opnsense $@
 /usr/local/sbin/pfgc : bin/pfgc
 	cp bin/pfgc $@
-/usr/local/bin/cron.sh : bin/cron.sh
+/usr/local/bin/cron.sh : bin/cron.sh /usr/local/bin/randsleep
 	cp bin/cron.sh $@
+/usr/local/bin/randsleep : bin/randsleep
+	cp bin/randsleep $@
 
 ########################################################################
 # `install-unbound`
