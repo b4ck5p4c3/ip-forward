@@ -234,7 +234,7 @@ install-mgmt : \
 	/usr/local/sbin/unbound-control-opnsense \
 	/usr/local/sbin/wg-junk
 
-/etc/cron.d/ip-forward-kludges : share/cron /usr/local/libexec/wg-kludge /usr/local/libexec/dpinger-kludge
+/etc/cron.d/ip-forward-kludges : share/cron /usr/local/libexec/wg-kludge /usr/local/libexec/dpinger-kludge /usr/local/sbin/pfgc /usr/local/bin/cron.sh
 	cp share/cron $@
 /usr/local/etc/rc.syshook.d/monitor/25-wg-junk : bin/syshook-wg-junk /usr/local/sbin/wg-junk
 	cp bin/syshook-wg-junk $@
@@ -254,6 +254,10 @@ install-mgmt : \
 	cp bin/opnsense-api $@
 /usr/local/sbin/unbound-control-opnsense : bin/unbound-control-opnsense
 	cp bin/unbound-control-opnsense $@
+/usr/local/sbin/pfgc : bin/pfgc
+	cp bin/pfgc $@
+/usr/local/bin/cron.sh : bin/cron.sh
+	cp bin/cron.sh $@
 
 ########################################################################
 # `install-unbound`

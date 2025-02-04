@@ -1,0 +1,47 @@
+#!/bin/sh -e
+
+min=0
+id=""
+case "$#" in
+    1)
+        max="$1"
+        ;;
+    2)
+        if [ "$2" -eq "$2" ] 2>/dev/null; then
+            min="$1"
+            max="$2"
+        else
+            max="$1"
+            id="$2"
+        fi
+        ;;
+    3)
+        min="$1"
+        max="$2"
+        id="$3"
+        ;;
+    *)
+        echo "Usage: $0 [MINs] <MAXs> [id]" 1>&2
+        exit 1
+        ;;
+esac
+
+test "$min" -lt "$max"
+
+if [ -r /proc/sys/kernel/random/boot_id ]; then
+    read boot_id </proc/sys/kernel/random/boot_id # Linux
+else
+    boot_id=$(sysctl kern.boot_id) # HardenedBSD
+    if [ -z "$boot_id" ]; then
+        boot_id=$(sysctl kern.boottime) # FreeBSD
+    fi
+fi
+
+set -- $(echo "randsleep:${boot_id}:${id}" | cksum)
+rnd="$1"
+
+us=$(( 1000000 + ($rnd % 1000000) ))
+us=${us#1}
+s=$(( $min + ($rnd % ($max - $min)) ))
+
+exec sleep "${s}.${us}"

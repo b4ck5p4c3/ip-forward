@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if ! [ "$#" -ge 2 -a "$1" -gt 0 ] 2>/dev/null; then
+    echo "Usage: $0 <ttl> <table> [table...]" 1>&2
+    exit 1
+fi
+
+ttl="$1"
+shift 1
+
+for table in "$@"; do
+    pfctl -t "$table" -T reset && pfctl -t "$table" -T expire "$ttl"
+done
