@@ -42,6 +42,7 @@ SORT_U := LC_ALL=C sort --unique
 	depends fetch build \
 	install \
 	install-mgmt \
+	install-speedtest \
 	install-unbound \
 	upgrade-unbound \
 	install-2tun \
@@ -260,6 +261,13 @@ install-mgmt : \
 	cp bin/cron.sh $@
 /usr/local/bin/randsleep : bin/randsleep
 	cp bin/randsleep $@
+
+########################################################################
+# `install-speedtest`
+
+install-speedtest : /usr/local/bin/speedtest
+/usr/local/bin/speedtest : # https://www.speedtest.net/apps/cli is FreeBSD-12 and -13, not -14 :-(
+	pkg install --force https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-freebsd13-x86_64.pkg
 
 ########################################################################
 # `install-unbound`
