@@ -267,7 +267,7 @@ install-mgmt : \
 
 install-speedtest : /usr/local/bin/speedtest
 /usr/local/bin/speedtest : # https://www.speedtest.net/apps/cli is FreeBSD-12 and -13, not -14 :-(
-	pkg install --force https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-freebsd13-x86_64.pkg
+	pkg add --force https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-freebsd13-x86_64.pkg
 
 ########################################################################
 # `install-unbound`
