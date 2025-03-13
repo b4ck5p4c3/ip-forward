@@ -193,7 +193,8 @@ tmp/ipv4.cloudflare.gz : share/cloudflare-ips-v4
 # `build`
 
 var/dns.gz : tmp/dns.fz139.gz tmp/dns.v2fly.gz tmp/dns.antifilter.gz share/iana-tlds.txt share/dns2tun.txt
-	zcat tmp/dns.fz139.gz tmp/dns.v2fly.gz tmp/dns.antifilter.gz share/dns2tun.txt \
+	zcat tmp/dns.fz139.gz tmp/dns.v2fly.gz tmp/dns.antifilter.gz \
+		| cat - share/dns2tun.txt \
 		| lib/sed-domain share/iana-tlds.txt \
 		| $(SORT_U) \
 		| gzip >$@
