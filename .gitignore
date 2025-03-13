@@ -1,5 +1,6 @@
 /local.conf.mk
 /share/antifilter-community.txt
+/share/cloudflare-ips-v4
 /share/fz139-resolves.zip
 /share/fz139-vigruzki.zip
 /share/iana-tlds.txt
