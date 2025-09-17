@@ -21,7 +21,7 @@ else
 fi
 
 echo 'sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBHiDbUTfLe7AW4D9lA/sC4ptZi6+mSwve6XTlP5JumuV8Fbzn07oGIBejq6MtBVm42RzSjxFH7rgieguJH6Tt8cAAAARc3NoOkI0Q0tTUDRDRVIwMFQ= b4cksp4ce-r00t'
-for u in `curl -sS -H "${SWYNCA_HEADER}" https://re-swynca.app.0x08.in/api/members/github | jq -r .[]`; do
+for u in `curl -sS -H "${SWYNCA_HEADER}" https://swynca.bksp.in/api/members/github | jq -r .[]`; do
   curl -sS "https://github.com/${u}.keys" \
     | grep -F -e ssh- -e openssh \
     | sed -E \
