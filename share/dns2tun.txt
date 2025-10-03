@@ -1,1 +1,3 @@
 yeggi.com
+lichess.org
+lichess1.org
