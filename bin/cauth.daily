@@ -1,0 +1,18 @@
+#!/bin/sh
+
+src=https://cauth.bksp.in/authorized_keys
+dst=/root/.ssh/authorized_keys2
+
+set -e
+
+rm -f "${dst}~"
+
+if [ "$HOST" = uxie.int.bksp.in ]; then
+  curl --connect-to cauth.bksp.in::ingress.int.bksp.in: -sS --output "${dst}~" "${src}"
+elif type curl >/dev/null 2>&1; then
+  curl -sS --output "${dst}~" "${src}"
+elif type wget >/dev/null 2>&1; then
+  wget --quiet -O "${dst}~" "${src}"
+fi
+
+mv "${dst}~" "${dst}"
