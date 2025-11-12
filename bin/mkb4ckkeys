@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+
+import argparse
+import functools
+import json
+import os
+import pathlib
+import stat
+import subprocess
+import tempfile
+import time
+import urllib.error
+import urllib.request
+
+DEFAULT_TIMEOUT = 20
+DAY = 86400
+DEFAULT_VALIDITY = 10  # As of March 15, 2029 … the maximum period during which domain validation information may be reused is 10 days
+SWYNCA = "swynca.bksp.in"
+USER_AGENT = "mkb4ckkeys (+https://github.com/b4ck5p4c3/ip-forward/)"
+R00T = "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBHiDbUTfLe7AW4D9lA/sC4ptZi6+mSwve6XTlP5JumuV8Fbzn07oGIBejq6MtBVm42RzSjxFH7rgieguJH6Tt8cAAAARc3NoOkI0Q0tTUDRDRVIwMFQ= b4cksp4ce-r00t"
+
+
+@functools.cache
+def known_ssh_keys():
+    # Get up-to-date list of ssh-(rsa|dss|ed25519) and others.
+    output = subprocess.check_output(["ssh", "-Q", "key"])
+    types = set(output.decode("ascii").strip().split())
+    if "ssh-rsa" not in types:
+        raise RuntimeError("Bad known key types from `ssh`", types)
+    return types
+
+
+def b4ck_github_users(timeout, authorization):
+    req = urllib.request.Request(
+        "https://{:s}/api/members/github".format(SWYNCA),
+        headers={"User-Agent": USER_AGENT},
+    )
+    if authorization is not None:
+        req.add_header("Authorization", authorization)
+    with urllib.request.urlopen(req, timeout=timeout) as fd:
+        users = tuple(json.load(fd))
+    for u in users:
+        if not isinstance(u, str) or u.strip().split() != [u]:
+            raise RuntimeError("Bad user from swynca", u)
+    return users
+
+
+def github_keys(user, timeout):
+    # That's urllib.request and not `requests` as `requests` is not in stdlib.
+    # The only thing that matters and that is missing is _easy_ Keep-Alive support.
+    req = urllib.request.Request(
+        "https://github.com/{:s}.keys".format(user), headers={"User-Agent": USER_AGENT}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as fd:
+            keys = fd.read()
+    except urllib.error.HTTPError as httpe:
+        if httpe.code == 404:
+            keys = b""
+        else:
+            raise
+    keys = tuple(filter(None, keys.decode("ascii").splitlines()))
+    for k in keys:
+        if k.split(maxsplit=1)[0] not in known_ssh_keys():
+            raise RuntimeError("Bad key for user", user, k)
+    return keys
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Make a list of b4ck5p4c3 SSH keys")
+    parser.add_argument(
+        "-T",
+        metavar="seconds",
+        dest="timeout",
+        type=int,
+        default=DEFAULT_TIMEOUT,
+        help="Set network timeout [default: %(default)d]",
+    )
+    parser.add_argument(
+        "--authorization",
+        metavar="FILE",
+        dest="authorization",
+        type=argparse.FileType("r", encoding="ascii"),
+        help="File with `Authorization` header for " + SWYNCA,
+    )
+    parser.add_argument(
+        "--lifetime",
+        metavar="DAYS",
+        dest="lifetime",
+        type=int,
+        default=DEFAULT_VALIDITY,
+        help="Key lifetime for `expiry-time`, [default: %(default)d days]",
+    )
+    parser.add_argument(
+        "--keys",
+        metavar="FILE",
+        dest="keys",
+        type=pathlib.Path,
+        help="Path to ssh/authorized_keys to overwrite",
+        required=True,
+    )
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    now = time.time()
+    exptm = time.localtime(now + args.lifetime * DAY)
+    expiry = 'expiry-time="{0.tm_year:04d}{0.tm_mon:02d}{0.tm_mday:02d}{0.tm_hour:02d}{0.tm_min:02d}"'.format(
+        exptm
+    )
+
+    swynauth = args.authorization.read().strip() if args.authorization else None
+    ghusers = b4ck_github_users(args.timeout, swynauth)
+    user_keys = {u: github_keys(u, args.timeout) for u in ghusers}
+
+    output = "# mkb4ckkeys at {:s} (UTC{:+d})\n".format(
+        time.ctime(now), time.timezone // 3600 # well, TZ is not always exact number of hours...
+    )
+    output += R00T + "\n"
+    for user in sorted(user_keys, key=lambda u: u.lower()):
+        for key in sorted(user_keys[user]):
+            output += "{:s} {:s} swynca+gh:{:s}\n".format(expiry, key, user)
+    output += "# EOF\n"
+    output = output.encode("ascii")
+
+    if args.keys.exists() and args.keys.is_file():
+        # atomic link/rename dance for existing ordinary files
+        with tempfile.NamedTemporaryFile(dir=str(args.keys.parent), mode="wb") as fd:
+            fd.write(output)
+            fd.flush()
+            os.chmod(fd.name, stat.S_IMODE(args.keys.stat().st_mode))
+            # rename() + link() is used as `fd.delete = False` does not propagate to _TemporaryFileCloser()
+            # so fd.name has to exist to be deleted ¯\_(ツ)_/¯
+            os.rename(fd.name, args.keys)
+            os.link(args.keys, fd.name)
+
+    else:
+        with args.keys.open("wb") as fd:
+            fd.write(output)
+
+
+if __name__ == "__main__":
+    main()
