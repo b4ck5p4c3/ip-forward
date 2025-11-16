@@ -48,6 +48,7 @@ SORT_U := LC_ALL=C sort --unique
 	install-2tun \
 	up \
 	clean distclean \
+	deinstall-2tun \
 	deinstall
 .PRECIOUS : $(WEB_SOURCES)
 
@@ -390,9 +391,12 @@ install-2tun : 	build \
 ########################################################################
 # `deinstall`
 
-deinstall :
-	rm -f /usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf
+deinstall-2tun :
+	rm -f /usr/local/etc/unbound.opnsense.d/forward-to-dns2tun.conf /usr/local/etc/unbound.opnsense.d/enable-dns2tun.conf
 	pluginctl -s unbound restart
+
+deinstall :
+	make -j1 deinstall-2tun
 	service unbound stop
 	rm -f /usr/local/etc/unbound/dns2tun.conf /usr/local/etc/unbound/local-tlds-ipset.conf /etc/rc.conf.d/unbound
 	rm -f /var/db/aliastables/ip2tun.gz /usr/local/etc/rc.syshook.d/early/50-ip2tun
