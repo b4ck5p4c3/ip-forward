@@ -273,22 +273,20 @@ install-speedtest : /usr/local/bin/speedtest
 ########################################################################
 # `install-unbound`
 
-install-unbound : \
-		/usr/local/etc/pkg/ip-forward.pub \
-		/usr/local/etc/pkg/repos/ip-forward.conf
+install-unbound : /usr/local/etc/pkg/repos/ip-forward.conf
 	pkg update
 	if ! pkg info unbound | grep -q 'IPSET\s*:\s*on\>'; then pkg upgrade -y --repository ip-forward unbound; fi
 	pkg lock -y unbound
 
-upgrade-unbound :
+upgrade-unbound : /usr/local/etc/pkg/repos/ip-forward.conf
 	pkg unlock -y unbound
 	pkg upgrade -y --repository ip-forward unbound
 	pkg lock -y unbound
 
 /usr/local/etc/pkg/ip-forward.pub : share/pkg-ip-forward.pub
 	cp share/pkg-ip-forward.pub $@
-/usr/local/etc/pkg/repos/ip-forward.conf : share/repos-ip-forward.conf /usr/local/etc/pkg/ip-forward.pub
-	cp share/repos-ip-forward.conf $@
+/usr/local/etc/pkg/repos/ip-forward.conf : share/repos-ip-forward.conf /usr/local/etc/pkg/ip-forward.pub /usr/local/opnsense/version/pkgs
+	pkgs=`cat /usr/local/opnsense/version/pkgs` && sed "s,@@pkgs@@,$${pkgs}," <share/repos-ip-forward.conf >$@
 
 ########################################################################
 # `install-vrrp`
