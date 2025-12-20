@@ -1,0 +1,48 @@
+#!/bin/sh -e
+#
+# Thanks to ValdikSS & people at ntc.party
+#
+
+ifwg="$1"
+
+port=$(wg show "${ifwg}" listen-port) # also checks ${ifwg}
+last=$(wg show "${ifwg}" latest-handshakes | awk 'BEGIN { ts = 0 } ($2 > ts) { ts = $2 } END { print ts }')
+now=$(date +%s)
+
+if [ "$now" -gt 0 -a "$last" -gt 0 ]; then
+  dt=$(( now - last ))
+  if [ "$dt" -lt 180 ]; then # REJECT_AFTER_TIME = 180
+    exit 0 # it's okay so far
+  fi
+else
+  echo "$0: bad time_t: ($now) and ($last)" 1>&2
+  exit 1
+fi
+
+uname=$(uname)
+
+if [ "$uname" = Linux ]; then
+  # dash's `read' fails to parse this pseudo-file.
+  lo=$(cut -f 1 /proc/sys/net/ipv4/ip_local_port_range)
+  hi=$(cut -f 2 /proc/sys/net/ipv4/ip_local_port_range)
+elif [ "$uname" = FreeBSD ]; then
+  lo=$(sysctl -n net.inet.ip.portrange.hifirst)
+  hi=$(sysctl -n net.inet.ip.portrange.hilast)
+fi
+if [ -z "$lo" -o -z "$hi" ]; then
+  lo=1024
+  hi=65535
+fi
+
+rng() {
+  # Note: `sh' has no $RANDOM and no $SRANDOM, that's not `bash'.
+  hexdump -n 4 -e '"%u"' /dev/urandom
+}
+
+randport=$port
+while [ "$randport" -eq "$port" ]; do
+  randport=$(( lo + (`rng` % (hi - lo + 1)) ))
+done
+
+echo + wg set "${ifwg}" listen-port "$randport" 1>&2
+wg set "${ifwg}" listen-port "$randport"
