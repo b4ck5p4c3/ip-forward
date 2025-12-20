@@ -3,6 +3,8 @@
 # Because VolksWG (AWG-2.0) is yet to be done.
 #
 
+ifGroup=wgKludge
+
 pluginctl -r return_gateways_status | jq -r '.dpinger[] | select(.status == "down") | .monitor' | while read ip; do
   if [ "$ip" != "${ip#*[0-9].[0-9]}" ]; then
     iface=`route -4 get "$ip" | awk '($1 == "interface:") {print $2}'`
@@ -12,7 +14,7 @@ pluginctl -r return_gateways_status | jq -r '.dpinger[] | select(.status == "dow
     echo "Unrecognized IP format '$ip'" 1>&2
     iface=
   fi
-  if [ -n "$iface" -a "$iface" != "${iface#wg}" ]; then
+  if [ -n "$iface" ] && ifconfig -g "${ifGroup}" | grep -Fx "${iface}"; then
     wg-junk "$iface" 1>&2 | tee /dev/stderr | logger -t wg-kludge
   fi
 done
