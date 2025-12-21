@@ -20,7 +20,8 @@ V2FLY_SERVICES := \
     tailscale \
     twitter \
     x \
-    xai
+    xai \
+    youtube
 
 AS_AMAZON_02 := AS16509
 AS_HETZNER := AS24940
