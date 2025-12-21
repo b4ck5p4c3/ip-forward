@@ -24,10 +24,12 @@ V2FLY_SERVICES := \
     youtube
 
 AS_AMAZON_02 := AS16509
+AS_CLOUDFLARENET := AS13335
 AS_HETZNER := AS24940
 AS_DIGITALOCEAN := AS14061
 AS2TUN := \
     $(AS_AMAZON_02) \
+    $(AS_CLOUDFLARENET) \
     $(AS_DIGITALOCEAN) \
     $(AS_HETZNER)
 
@@ -204,7 +206,7 @@ tmp/ipv4.tor.gz : share/tor-auth-dirs.inc share/tor-fallback-dirs.inc share/tor-
 # Cloudflare. To ease ECH pain :-(
 
 tmp/ipv4.cloudflare.gz : share/cloudflare-ips-v4
-	cp share/cloudflare-ips-v4 tmp/ipv4.cloudflare
+	grep ^ share/cloudflare-ips-v4 >tmp/ipv4.cloudflare # add newline if missing
 	gzip tmp/ipv4.cloudflare
 
 ########################################################################
