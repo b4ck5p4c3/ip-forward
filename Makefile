@@ -22,6 +22,12 @@ V2FLY_SERVICES := \
     x \
     xai
 
+AS_HETZNER := AS24940
+AS_DIGITALOCEAN := AS14061
+AS2TUN := \
+    $(AS_DIGITALOCEAN) \
+    $(AS_HETZNER)
+
 -include local.conf.mk
 
 WEB_SOURCES := \
@@ -104,6 +110,14 @@ share/tor-microdesc : share/tor-auth-dirs.inc
 	done
 share/cloudflare-ips-v4 :
 	lib/dl https://www.cloudflare.com/ips-v4 $@
+tmp/announced-prefixes-v4.gz :
+	for as in $(AS2TUN); do \
+		lib/dl https://stat.ripe.net/data/announced-prefixes/data.json?resource=$${as} share/announced-prefixes-$${as} ; \
+		jq -r '.data.prefixes[].prefix | select(contains(":") | not)' <share/announced-prefixes-$${as} ; \
+	done \
+		| lib/aggregate \
+		| $(SORT_U) --version-sort \
+		| gzip >$@
 
 ########################################################################
 # IANA TLD list derivatives, see https://www.iana.org/domains/root/files
@@ -200,8 +214,8 @@ var/dns.gz : tmp/dns.fz139.gz tmp/dns.v2fly.gz tmp/dns.antifilter.gz share/iana-
 		| $(SORT_U) \
 		| gzip >$@
 
-var/ipv4.gz : tmp/ipv4.fz139.gz tmp/ipv4.tor.gz tmp/ipv4.cloudflare.gz
-	zcat tmp/ipv4.fz139.gz tmp/ipv4.tor.gz tmp/ipv4.cloudflare.gz \
+var/ipv4.gz : tmp/ipv4.fz139.gz tmp/ipv4.tor.gz tmp/ipv4.cloudflare.gz tmp/announced-prefixes-v4.gz
+	zcat tmp/ipv4.fz139.gz tmp/ipv4.tor.gz tmp/ipv4.cloudflare.gz tmp/announced-prefixes-v4.gz \
 		| lib/aggregate \
 		| $(SORT_U) --version-sort \
 		| gzip >$@
