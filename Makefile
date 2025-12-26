@@ -19,6 +19,7 @@ V2FLY_SERVICES := \
     signal \
     tailscale \
     twitter \
+    whatsapp \
     x \
     xai \
     youtube
