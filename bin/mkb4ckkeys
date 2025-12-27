@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import argparse
+import base64
 import functools
+import hashlib
 import json
 import os
 import pathlib
@@ -18,6 +20,8 @@ DEFAULT_VALIDITY = 10  # As of March 15, 2029 … the maximum period during whic
 SWYNCA = "swynca.bksp.in"
 USER_AGENT = "mkb4ckkeys (+https://github.com/b4ck5p4c3/ip-forward/)"
 R00T = "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBHiDbUTfLe7AW4D9lA/sC4ptZi6+mSwve6XTlP5JumuV8Fbzn07oGIBejq6MtBVm42RzSjxFH7rgieguJH6Tt8cAAAARc3NoOkI0Q0tTUDRDRVIwMFQ= b4cksp4ce-r00t"
+# https://help.mikrotik.com/docs/spaces/ROS/pages/8978504/User#User-SSHKeys
+MIKROTIK_KEYS = {"ssh-rsa", "ssh-ed25519"}
 
 
 @functools.cache
@@ -28,6 +32,14 @@ def known_ssh_keys():
     if "ssh-rsa" not in types:
         raise RuntimeError("Bad known key types from `ssh`", types)
     return types
+
+
+def ssh_keyfp_sha256(key: str):
+    fp = base64.b64encode(hashlib.sha256(base64.b64decode(key)).digest()).decode("ascii")
+    # MikroTik formats fingerprint this way, while OpenSSH strips `=` padding.
+    assert fp.endswith("="), fp
+    fp = "SHA256:" + fp
+    return fp
 
 
 def b4ck_github_users(timeout, authorization):
@@ -97,47 +109,92 @@ def parse_args():
         dest="keys",
         type=pathlib.Path,
         help="Path to ssh/authorized_keys to overwrite",
-        required=True,
     )
-    return parser.parse_args()
-
-
-def main():
-    args = parse_args()
-    now = time.time()
-    exptm = time.localtime(now + args.lifetime * DAY)
-    expiry = 'expiry-time="{0.tm_year:04d}{0.tm_mon:02d}{0.tm_mday:02d}{0.tm_hour:02d}{0.tm_min:02d}"'.format(
-        exptm
+    parser.add_argument(
+        "--mtjson",
+        metavar="FILE",
+        dest="mtjson",
+        type=pathlib.Path,
+        help="Path to user/ssh-keys/mikrotik.json to overwrite",
     )
+    args = parser.parse_args()
+    if not args.keys and not args.mtjson:
+        parser.error("either --keys or --mtjson is required")
+    return args
 
-    swynauth = args.authorization.read().strip() if args.authorization else None
-    ghusers = b4ck_github_users(args.timeout, swynauth)
-    user_keys = {u: github_keys(u, args.timeout) for u in ghusers}
 
+def format_authorized_keys(now, lifetime, user_keys):
+    exptm = time.localtime(now + lifetime * DAY)
+    expiry = (
+        'expiry-time="{0.tm_year:04d}{0.tm_mon:02d}{0.tm_mday:02d}{0.tm_hour:02d}{0.tm_min:02d}"'.format(
+            exptm
+        )
+    )
     output = "# mkb4ckkeys at {:s} (UTC{:+d})\n".format(
-        time.ctime(now), time.timezone // 3600 # well, TZ is not always exact number of hours...
+        time.ctime(now),
+        time.timezone // 3600,  # well, TZ is not always exact number of hours...
     )
     output += R00T + "\n"
     for user in sorted(user_keys, key=lambda u: u.lower()):
         for key in sorted(user_keys[user]):
             output += "{:s} {:s} swynca+gh:{:s}\n".format(expiry, key, user)
     output += "# EOF\n"
-    output = output.encode("ascii")
+    return output
 
-    if args.keys.exists() and args.keys.is_file():
+
+def format_mtjson_keys(now, user_keys):
+    kout = []
+    for user, klist in user_keys.items():
+        for key in klist:
+            l = key.split()
+            # `keytype` is also embedded into the `key`, but is there a good reason to parse it?...
+            keytype, key = l[0], l[1]
+            if keytype in MIKROTIK_KEYS:
+                kobj = {
+                    "key": f"{keytype:s} {key:s} swynca+gh:{user:s}",
+                    "fingerprint": ssh_keyfp_sha256(key),
+                    "type": keytype,
+                }
+                kout.append(kobj)
+    output = {
+        "time": time.ctime(now),
+        "timezone": int(time.timezone),
+        "timestamp": int(now * 1000),
+        "keys": kout,
+    }
+    return json.dumps(output)
+
+
+def overwrite(dest: pathlib.Path, output: bytes):
+    if dest.exists() and dest.is_file():
         # atomic link/rename dance for existing ordinary files
-        with tempfile.NamedTemporaryFile(dir=str(args.keys.parent), mode="wb") as fd:
+        with tempfile.NamedTemporaryFile(dir=str(dest.parent), mode="wb") as fd:
             fd.write(output)
             fd.flush()
-            os.chmod(fd.name, stat.S_IMODE(args.keys.stat().st_mode))
+            os.chmod(fd.name, stat.S_IMODE(dest.stat().st_mode))
             # rename() + link() is used as `fd.delete = False` does not propagate to _TemporaryFileCloser()
             # so fd.name has to exist to be deleted ¯\_(ツ)_/¯
-            os.rename(fd.name, args.keys)
-            os.link(args.keys, fd.name)
+            # TODO: report to bugs.python.org maybe?
+            os.rename(fd.name, dest)
+            os.link(dest, fd.name)
 
     else:
-        with args.keys.open("wb") as fd:
+        with dest.open("wb") as fd:
             fd.write(output)
+
+
+def main():
+    args = parse_args()
+    now = time.time()
+    swynauth = args.authorization.read().strip() if args.authorization else None
+    ghusers = b4ck_github_users(args.timeout, swynauth)
+    user_keys = {u: github_keys(u, args.timeout) for u in ghusers}
+    if args.keys:
+        out = format_authorized_keys(now, args.lifetime, user_keys)
+        overwrite(args.keys, out.encode("ascii"))
+    if args.mtjson:
+        out = format_mtjson_keys(now, user_keys)
+        overwrite(args.mtjson, out.encode("ascii"))
 
 
 if __name__ == "__main__":
