@@ -31,7 +31,9 @@ AS_DIGITALOCEAN := AS14061
 AS_HETZNER := AS24940
 AS_OVH := AS16276
 AS_VEXXHOST := AS33028 # git.{yoctoproject,openembedded}.org
+AS_TELEGRAM := AS62041
 AS2TUN := \
+    $(AS_TELEGRAM) \
     $(AS_VEXXHOST) \
     $(AS_AKAMAI) \
     $(AS_AMAZON_02) \
