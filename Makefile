@@ -25,6 +25,7 @@ V2FLY_SERVICES := \
     youtube
 
 AS_AKAMAI := AS16625
+AS_LINODE := AS63949
 AS_AMAZON_02 := AS16509
 AS_CLOUDFLARENET := AS13335
 AS_DIGITALOCEAN := AS14061
@@ -32,10 +33,17 @@ AS_HETZNER := AS24940
 AS_OVH := AS16276
 AS_VEXXHOST := AS33028 # git.{yoctoproject,openembedded}.org
 AS_TELEGRAM := AS62041
+AS_VDSINA := AS216071 # hosting used by aa13q.ru
+AS_REDHAT := AS21785 # FML! That's gcc.gnu.org
+AS_NETCUP := AS21785 # hosting used by furry.industries
 AS2TUN := \
+    $(AS_NETCUP) \
+    $(AS_REDHAT) \
+    $(AS_VDSINA) \
     $(AS_TELEGRAM) \
     $(AS_VEXXHOST) \
     $(AS_AKAMAI) \
+    $(AS_LINODE) \
     $(AS_AMAZON_02) \
     $(AS_CLOUDFLARENET) \
     $(AS_DIGITALOCEAN) \
@@ -47,6 +55,7 @@ AS2TUN := \
 WEB_SOURCES := \
     share/antifilter-community.txt \
     share/cloudflare-ips-v4 \
+    share/telegram-cidr \
     share/fz139-resolves.zip \
     share/fz139-vigruzki.zip \
     share/iana-tlds.txt \
@@ -124,6 +133,8 @@ share/tor-microdesc : share/tor-auth-dirs.inc
 	done
 share/cloudflare-ips-v4 :
 	lib/dl https://www.cloudflare.com/ips-v4 $@
+share/telegram-cidr :
+	lib/dl https://core.telegram.org/resources/cidr.txt $@
 tmp/announced-prefixes-v4.gz :
 	for as in $(AS2TUN); do \
 		lib/dl https://stat.ripe.net/data/announced-prefixes/data.json?resource=$${as} share/announced-prefixes-$${as} ; \
@@ -218,6 +229,10 @@ tmp/ipv4.cloudflare.gz : share/cloudflare-ips-v4
 	grep ^ share/cloudflare-ips-v4 >tmp/ipv4.cloudflare # add newline if missing
 	gzip tmp/ipv4.cloudflare
 
+tmp/ipv4.telegram.gz : share/telegram-cidr
+	grep -vF : share/telegram-cidr >tmp/ipv4.telegram # drop IPv6
+	gzip tmp/ipv4.telegram
+
 ########################################################################
 # `build`
 
@@ -228,8 +243,8 @@ var/dns.gz : tmp/dns.fz139.gz tmp/dns.v2fly.gz tmp/dns.antifilter.gz share/iana-
 		| $(SORT_U) \
 		| gzip >$@
 
-var/ipv4.gz : tmp/ipv4.fz139.gz tmp/ipv4.tor.gz tmp/ipv4.cloudflare.gz tmp/announced-prefixes-v4.gz
-	zcat tmp/ipv4.fz139.gz tmp/ipv4.tor.gz tmp/ipv4.cloudflare.gz tmp/announced-prefixes-v4.gz \
+var/ipv4.gz : tmp/ipv4.fz139.gz tmp/ipv4.tor.gz tmp/ipv4.cloudflare.gz tmp/ipv4.telegram.gz tmp/announced-prefixes-v4.gz
+	zcat tmp/ipv4.fz139.gz tmp/ipv4.tor.gz tmp/ipv4.cloudflare.gz tmp/ipv4.telegram.gz tmp/announced-prefixes-v4.gz \
 		| lib/aggregate \
 		| $(SORT_U) --version-sort \
 		| gzip >$@
