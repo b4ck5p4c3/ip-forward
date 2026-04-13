@@ -21,7 +21,7 @@ SWYNCA = "swynca.bksp.in"
 USER_AGENT = "mkb4ckkeys (+https://github.com/b4ck5p4c3/ip-forward/)"
 R00T = "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBHiDbUTfLe7AW4D9lA/sC4ptZi6+mSwve6XTlP5JumuV8Fbzn07oGIBejq6MtBVm42RzSjxFH7rgieguJH6Tt8cAAAARc3NoOkI0Q0tTUDRDRVIwMFQ= b4cksp4ce-r00t"
 # https://help.mikrotik.com/docs/spaces/ROS/pages/8978504/User#User-SSHKeys
-MIKROTIK_KEYS = {"ssh-rsa", "ssh-ed25519"}
+MIKROTIK_KEYS = {"ssh-rsa", "ssh-ed25519", "sk-ssh-ed25519@openssh.com"}
 
 
 @functools.cache
