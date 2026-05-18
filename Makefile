@@ -8,6 +8,7 @@ V2FLY_SERVICES := \
     discord \
     facebook \
     facebook-ads \
+    google-deepmind \
     instagram \
     instagram-ads \
     intel \
